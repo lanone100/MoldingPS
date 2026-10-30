@@ -341,6 +341,14 @@ select option,select optgroup{background-color:#FFFFFF;color:#1C1C1E;font-weight
 .io-btn b{display:block;font-size:15px}
 .io-btn small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .io-btn:active{transform:scale(.98)}
+.roster{-webkit-user-select:none;user-select:none}
+.roster.msel .cell{touch-action:none}
+.roster thead th[data-day],.roster tbody th[data-row]{cursor:pointer}
+.cell.sel{outline:3px solid var(--acc);outline-offset:-2px;box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 30%,transparent);border-style:solid}
+.selbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:44;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;padding:8px 10px 8px 16px;border-radius:20px;font-weight:600;max-width:calc(100vw - 20px)}
+.selbar small{font-weight:500;color:var(--muted);margin-left:4px}
+.selbar[hidden]{display:none}
+@media (min-width:900px){.selbar{bottom:24px}}
 /* scanner */
 .scanbtn{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:10px;border:0;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);display:grid;place-items:center}
 .scanbtn svg,.iconbtn svg{width:20px;height:20px}
@@ -802,6 +810,7 @@ function render() {
   $('#main').innerHTML = `<div class="view-title"><h1>${r.title}</h1><span class="meta">${r.meta || ''}</span></div>
     <div class="layout"><section>${r.main}</section><aside style="display:grid;gap:16px">${r.aside}</aside></div>`;
   r.bind && r.bind($('#main'));
+  if (v !== 'roster' && $('#selbar')) $('#selbar').hidden = true;
   window.scrollTo(0, y);
 }
 $('#q').addEventListener('input', e => { UI.q[currentView()] = e.target.value.trim(); render(); });
@@ -1170,7 +1179,7 @@ function viewRoster() {
   return {
     title: '人員排班表',
     meta: `${days[0].getMonth() + 1}/${days[0].getDate()} – ${days[6].getMonth() + 1}/${days[6].getDate()}`,
-    filters: `<div class="weeknav"><button class="btn" id="pw" aria-label="上一週">‹</button><button class="btn" id="tw">本週</button><button class="btn" id="nw" aria-label="下一週">›</button></div>
+    filters: `<div class="weeknav"><button class="btn" id="pw" aria-label="上一週">‹</button><button class="btn" id="tw">本週</button><button class="btn" id="nw" aria-label="下一週">›</button></div><button class="chip" id="msel" aria-pressed="${RS.on}">☐ 多選</button>
       ${teams.length ? `<select class="ctl" id="fteam" aria-label="股別">${['全部', ...teams, ...(hasNoTeam ? ['未分股'] : [])].map(t => `<option value="${esc(t)}"${t === UI.team ? ' selected' : ''}>${t === '全部' ? '全部股別' : esc(t)}</option>`).join('')}</select>` : ''}`,
     actions: `<button class="btn" id="copy">複製上週</button><button class="btn" id="exp">匯入／匯出</button><button class="btn pri" id="mg">人員</button>`,
     bindFilters: f => {
@@ -1179,6 +1188,7 @@ function viewRoster() {
       $('#pw', f).onclick = () => sw(-7); $('#nw', f).onclick = () => sw(7);
       $('#tw', f).onclick = () => { UI.week = ymd(mondayOf(new Date())); render(); };
       $('#mg', f).onclick = manageStaff;
+      $('#msel', f).onclick = e => { RS.on = !RS.on; mem.set('msel', RS.on); e.currentTarget.setAttribute('aria-pressed', RS.on); $('.roster')?.classList.toggle('msel', RS.on); if (!RS.on) rsClear(); toast(RS.on ? '多選模式：點選或拖曳框選格子' : '已關閉多選模式'); };
       $('#copy', f).onclick = async () => {
         const prev = ymd(addDays(parseD(UI.week), -7)); const src = list('roster').filter(r => r.week === prev);
         if (!src.length) { toast('上週沒有班表可以複製'); return; }
@@ -1189,10 +1199,10 @@ function viewRoster() {
     },
     exp: () => { const wkd = [...Array(7)].map((_, i) => addDays(parseD(UI.week), i));
         exportCSV(`人員排班_${UI.week}${UI.team !== '全部' ? '_' + UI.team : ''}.csv`, ['股別','工號','姓名','職稱', ...wkd.map(d => `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`)], allStaff.map(p => [p.team, p.empNo, p.name, p.role, ...wkd.map((_, i) => dayVal(p, i))])); },
-    main: allStaff.length ? `<div class="tbl-wrap glass"><table class="tbl roster"><thead><tr><th class="sticky">人員</th>${days.map(d => `<th class="${ymd(d) === td ? 'today' : ''}">週${WD[d.getDay()]}<b>${d.getMonth() + 1}/${d.getDate()}</b></th>`).join('')}</tr></thead>
-      <tbody>${staff.map(p => `<tr><th class="sticky">${esc(p.name)}${is12(p) ? ' <span class="tag ok">12h</span>' : ''}<small>${[p.team, p.role, p.empNo].filter(Boolean).map(esc).join('・')}</small></th>${days.map((d, i) => { const val = dayVal(p, i); return `<td><button class="cell" data-s="${p.id}" data-i="${i}" data-v="${val}" aria-label="${esc(p.name)} 週${WD[d.getDay()]}：${val || '未排'}">${val || '＋'}</button></td>`; }).join('')}</tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">找不到符合的人員</td></tr>`}</tbody>
+    main: allStaff.length ? `<div class="tbl-wrap glass"><table class="tbl roster"><thead><tr><th class="sticky">人員</th>${days.map((d, i) => `<th data-day="${i}" title="點一下選取整天" class="${ymd(d) === td ? 'today' : ''}">週${WD[d.getDay()]}<b>${d.getMonth() + 1}/${d.getDate()}</b></th>`).join('')}</tr></thead>
+      <tbody>${staff.map(p => `<tr><th class="sticky" data-row="${p.id}" title="點一下選取整週">${esc(p.name)}${is12(p) ? ' <span class="tag ok">12h</span>' : ''}<small>${[p.team, p.role, p.empNo].filter(Boolean).map(esc).join('・')}</small></th>${days.map((d, i) => { const val = dayVal(p, i); return `<td><button class="cell" data-s="${p.id}" data-i="${i}" data-v="${val}" aria-label="${esc(p.name)} 週${WD[d.getDay()]}：${val || '未排'}">${val || '＋'}</button></td>`; }).join('')}</tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">找不到符合的人員</td></tr>`}</tbody>
       <tfoot><tr><td class="sticky" style="font-size:12px;color:var(--muted)">出勤</td>${days.map((d, i) => { const c = { 早:0, 中:0, 夜:0, 日12:0, 夜12:0 }; allStaff.forEach(p => { const v = dayVal(p, i); if (c[v] !== undefined) c[v]++; }); return `<td style="font-size:12px;color:var(--muted);line-height:1.4">早${c.早} 中${c.中}<br>夜${c.夜}${hasMig ? `<br>日12：${c.日12}<br>夜12：${c.夜12}` : ''}</td>`; }).join('')}</tr></tfoot></table></div>
-      <div class="legend"><span>點格子選擇班別：</span><span><i style="background:linear-gradient(140deg,#FFD60A,#FF9F0A)"></i>早班 08–16</span><span><i style="background:linear-gradient(140deg,#64D2FF,#0A84FF)"></i>中班 16–24</span><span><i style="background:linear-gradient(140deg,#7D7AFF,#5E2CA5)"></i>夜班 00–08</span><span><i style="background:linear-gradient(140deg,#5EE6A8,#18A558)"></i>移工日12 08–20</span><span><i style="background:linear-gradient(140deg,#FF6FA0,#B0245E)"></i>移工夜12 20–08</span><span><i style="background:var(--field);border:1px solid var(--line)"></i>休假</span></div>`
+      <div class="legend"><span>點格子選擇班別；電腦用滑鼠拖曳、平板開「多選」可一次框選多格（點日期／人名選整天／整週）：</span><span><i style="background:linear-gradient(140deg,#FFD60A,#FF9F0A)"></i>早班 08–16</span><span><i style="background:linear-gradient(140deg,#64D2FF,#0A84FF)"></i>中班 16–24</span><span><i style="background:linear-gradient(140deg,#7D7AFF,#5E2CA5)"></i>夜班 00–08</span><span><i style="background:linear-gradient(140deg,#5EE6A8,#18A558)"></i>移工日12 08–20</span><span><i style="background:linear-gradient(140deg,#FF6FA0,#B0245E)"></i>移工夜12 20–08</span><span><i style="background:var(--field);border:1px solid var(--line)"></i>休假</span></div>`
       : `<div class="empty glass">還沒有人員名單，先把線上人員加進來就能排班。<br><button class="btn pri" id="mg2">＋ 新增人員</button> <button class="btn" id="imp2">匯入名單</button></div>`,
     aside: `<div class="stats">${statHTML(UI.team === '全部' ? '人員數' : esc(UI.team) + '人數', allStaff.length, 'c-purple')}${statHTML('今日出勤', todayCnt === null ? '—' : todayCnt, 'c-indigo')}${statHTML('本週工時', fmt(hours, 0) + ' h', 'c-blue')}${statHTML('本週休假', off + ' 天', 'c-pink')}</div>
       <div class="panel glass"><h2><span class="bar"></span>計算公式</h2>${formulaTable([
@@ -1202,10 +1212,133 @@ function viewRoster() {
     bind: m => {
       const m2 = $('#mg2', m); if (m2) m2.onclick = () => editStaff();
       const i2 = $('#imp2', m); if (i2) i2.onclick = () => requirePwd(importStaff);
-      $$('.cell', m).forEach(b => b.onclick = () => pickShift(b.dataset.s, +b.dataset.i));
+      rosterBind(m);
     }
   };
 }
+/* ---------- 排班表：像 Excel 一樣拖曳框選、複製貼上 ---------- */
+const RS = { on: mem.get('msel', false), sel: new Set(), base: new Set(), anchor: null, drag: false, moved: false, ptype: '', week: '', clip: null, grid: [] };
+const rsKey = g => g.s + '|' + g.i;
+function rsPaint() { RS.grid.forEach(g => g.c.classList.toggle('sel', RS.sel.has(rsKey(g)))); rsBar(); }
+function rsRect(a, b) {
+  RS.sel = new Set(RS.base);
+  const r1 = Math.min(a.r, b.r), r2 = Math.max(a.r, b.r), i1 = Math.min(a.i, b.i), i2 = Math.max(a.i, b.i);
+  RS.grid.forEach(g => { if (g.r >= r1 && g.r <= r2 && g.i >= i1 && g.i <= i2) RS.sel.add(rsKey(g)); });
+  rsPaint();
+}
+function rsClear() { RS.sel.clear(); RS.base.clear(); rsPaint(); }
+function rsSelGrid() { return RS.grid.filter(g => RS.sel.has(rsKey(g))); }
+function rsBar() {
+  let bar = $('#selbar');
+  if (!bar) { bar = document.createElement('div'); bar.id = 'selbar'; bar.className = 'selbar glass'; document.body.appendChild(bar); }
+  const n = RS.sel.size;
+  if (!n || currentView() !== 'roster') { bar.hidden = true; return; }
+  const rows = new Set(rsSelGrid().map(g => g.s)).size, cols = new Set(rsSelGrid().map(g => g.i)).size;
+  bar.hidden = false;
+  bar.innerHTML = `<span>已選 <b>${n}</b> 格<small>（${rows} 人 × ${cols} 天）</small></span>
+    <button class="btn sm pri" data-sb="set">設定班別</button><button class="btn sm" data-sb="copy">複製</button>${RS.clip ? '<button class="btn sm" data-sb="paste">貼上</button>' : ''}
+    <button class="btn sm" data-sb="del">清除內容</button><button class="btn sm" data-sb="x" aria-label="取消選取">✕</button>`;
+  $$('[data-sb]', bar).forEach(b => b.onclick = () => ({ set: () => pickShiftMany([...RS.sel]), copy: rsCopy, paste: rsPaste, del: () => rsApply(new Map([...RS.sel].map(k => [k, '']))), x: rsClear })[b.dataset.sb]());
+}
+async function rsApply(changes) {       // changes: Map('staffId|day' → 班別)
+  const by = {};
+  changes.forEach((v, k) => { const [s, i] = k.split('|'); (by[s] = by[s] || {})[+i] = v; });
+  for (const s in by) {
+    const id = UI.week + '_' + s, r = S.data.roster.get(id) || {}, arr = [...(r.days || ['','','','','','',''])];
+    Object.entries(by[s]).forEach(([i, v]) => arr[+i] = v);
+    try { await save('roster', id, { week: UI.week, staffId: s, days: arr }); } catch (e) { render(); return; }
+  }
+  sfx('ok');
+}
+function rsBounds(gs) { return { r1: Math.min(...gs.map(g => g.r)), r2: Math.max(...gs.map(g => g.r)), i1: Math.min(...gs.map(g => g.i)), i2: Math.max(...gs.map(g => g.i)) }; }
+function rsVal(g) { const r = S.data.roster.get(UI.week + '_' + g.s); return r && r.days ? r.days[g.i] || '' : ''; }
+function rsCopy() {
+  const gs = rsSelGrid(); if (!gs.length) return;
+  const b = rsBounds(gs), rows = [];
+  for (let r = b.r1; r <= b.r2; r++) { const row = []; for (let i = b.i1; i <= b.i2; i++) { const g = RS.grid.find(x => x.r === r && x.i === i); row.push(g && RS.sel.has(rsKey(g)) ? rsVal(g) : ''); } rows.push(row); }
+  RS.clip = rows;
+  try { navigator.clipboard && navigator.clipboard.writeText(rows.map(r => r.join('\t')).join('\n')).catch(() => {}); } catch (e) {}
+  toast(`已複製 ${rows.length} 人 × ${rows[0].length} 天`); rsBar();
+}
+function rsPaste(text) {
+  let clip = RS.clip;
+  const valid = [...SHIFT_CYCLE, ...SHIFT_CYCLE_12, ...LEAVES];
+  if (typeof text === 'string' && text.trim()) clip = text.replace(/\r/g, '').split('\n').filter(l => l.length).map(l => l.split('\t').map(x => x.trim()));
+  if (!clip || !clip.length) { toast('請先複製要貼上的班別'); return; }
+  const gs = rsSelGrid(); if (!gs.length) { toast('請先選取要貼上的位置'); return; }
+  const b = rsBounds(gs), rowsR = [...new Set(RS.grid.map(g => g.r))].sort((x, y) => x - y), ch = new Map();
+  const startRow = rowsR.indexOf(b.r1);
+  // 選取範圍比複製內容大時，重複填滿（例如複製一週，貼到多人）
+  const hR = Math.max(clip.length, b.r2 - b.r1 + 1), wC = Math.max(clip[0].length, b.i2 - b.i1 + 1);
+  for (let y = 0; y < hR; y++) { const r = rowsR[startRow + y]; if (r == null) break;
+    for (let x = 0; x < wC; x++) { const i = b.i1 + x; if (i > 6) break; const v = clip[y % clip.length][x % clip[0].length] ?? '';
+      const g = RS.grid.find(q => q.r === r && q.i === i); if (g && (v === '' || valid.includes(v))) ch.set(rsKey(g), v); } }
+  if (!ch.size) { toast('貼上的內容無法辨識為班別'); return; }
+  rsApply(ch); toast(`已貼上 ${ch.size} 格`);
+}
+function pickShiftMany(keys) {
+  if (!keys.length) return;
+  if (keys.length === 1) { const [s, i] = keys[0].split('|'); pickShift(s, +i); return; }
+  const rows = new Set(keys.map(k => k.split('|')[0])).size, cols = new Set(keys.map(k => k.split('|')[1])).size;
+  openSheet({
+    title: '批次設定班別',
+    body: `<div class="pick-head"><b>已選 ${keys.length} 格</b><span style="color:var(--muted)">${rows} 人 × ${cols} 天</span></div>
+      ${SHIFT_GROUPS.map(g => `<div class="pick-group"><h4>${g.title}</h4><div class="pick-grid">${g.items.map(v => `<button type="button" class="cell" data-pick="${v}" data-v="${v}">${v}${SHIFT_TIME[v] ? `<small>${SHIFT_TIME[v]}</small>` : ''}</button>`).join('')}</div></div>`).join('')}
+      <div class="pick-foot"><span style="flex:1;font-size:14px;color:var(--muted)">選取的格子會全部套用同一個班別</span><button type="button" class="btn" data-pick="">清除這些格子</button></div>`
+  });
+  $$('[data-pick]', dlg).forEach(b => b.onclick = () => { const v = b.dataset.pick; dlg.close(); rsApply(new Map(keys.map(k => [k, v]))); rsClear(); toast(v ? `已將 ${keys.length} 格設為「${v}」` : `已清除 ${keys.length} 格`); });
+}
+function rosterBind(m) {
+  if (RS.week !== UI.week) { RS.sel.clear(); RS.base.clear(); RS.week = UI.week; }
+  RS.grid = $$('.cell', m).map(c => ({ c, r: c.closest('tr').rowIndex, i: +c.dataset.i, s: c.dataset.s }));
+  const valid = new Set(RS.grid.map(rsKey)); [...RS.sel].forEach(k => { if (!valid.has(k)) RS.sel.delete(k); });
+  $('.roster', m)?.classList.toggle('msel', RS.on);
+  RS.grid.forEach(g => {
+    g.c.addEventListener('pointerdown', e => {
+      RS.ptype = e.pointerType;
+      const multi = RS.on || e.pointerType === 'mouse';
+      if (!multi || e.button > 0) return;
+      e.preventDefault();
+      if (e.shiftKey && RS.anchor) { RS.base = new Set(); rsRect(RS.anchor, g); RS.moved = true; return; }
+      RS.drag = true; RS.moved = false; RS.anchor = g; RS.ctrl = e.ctrlKey || e.metaKey;
+      RS.base = RS.on || RS.ctrl ? new Set(RS.sel) : new Set();
+      if (!RS.on && !RS.ctrl) rsRect(g, g);
+    });
+    g.c.onclick = e => { if (RS.ptype === 'mouse' || RS.on) { e.preventDefault(); return; } pickShift(g.s, g.i); };
+  });
+  // 點日期欄位＝選整天；點人名＝選整週
+  $$('thead th[data-day]', m).forEach(th => th.onclick = () => { const i = +th.dataset.day; RS.base = new Set(); RS.sel = new Set(RS.grid.filter(g => g.i === i).map(rsKey)); rsPaint(); });
+  $$('tbody th[data-row]', m).forEach(th => th.onclick = () => { const s = th.dataset.row; RS.base = new Set(); RS.sel = new Set(RS.grid.filter(g => g.s === s).map(rsKey)); rsPaint(); });
+  rsPaint();
+}
+document.addEventListener('pointermove', e => {
+  if (!RS.drag) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest && el.closest('.roster .cell');
+  const g = c && RS.grid.find(x => x.c === c);
+  if (g && g !== RS.last) { RS.last = g; if (g !== RS.anchor) RS.moved = true; rsRect(RS.anchor, g); }
+});
+document.addEventListener('pointerup', () => {
+  if (!RS.drag) return; RS.drag = false; RS.last = null;
+  const k = RS.anchor && rsKey(RS.anchor);
+  if (!RS.moved) {
+    if (RS.on || RS.ctrl) { RS.sel = new Set(RS.base); RS.base.has(k) ? RS.sel.delete(k) : RS.sel.add(k); rsPaint(); }
+    else { rsClear(); pickShift(RS.anchor.s, RS.anchor.i); }
+  }
+});
+document.addEventListener('keydown', e => {
+  if (currentView() !== 'roster' || dlg.open || !RS.sel.size) return;
+  if (e.target && e.target.matches && e.target.matches('input,textarea,select')) return;
+  if (e.key === 'Escape') { rsClear(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); rsApply(new Map([...RS.sel].map(k => [k, '']))); toast(`已清除 ${RS.sel.size} 格`); }
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') { e.preventDefault(); rsCopy(); }
+  else if (e.key === 'Enter') { e.preventDefault(); pickShiftMany([...RS.sel]); }
+});
+document.addEventListener('paste', e => {
+  if (currentView() !== 'roster' || dlg.open || !RS.sel.size) return;
+  if (e.target && e.target.matches && e.target.matches('input,textarea')) return;
+  const t = e.clipboardData && e.clipboardData.getData('text'); e.preventDefault(); rsPaste(t || null);
+});
+
 function manageStaff() {
   const staff = list('staff').sort((a, b) => String(a.empNo || a.name).localeCompare(String(b.empNo || b.name), 'zh-Hant'));
   openSheet({
