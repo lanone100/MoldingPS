@@ -343,6 +343,7 @@ select option,select optgroup{background-color:#FFFFFF;color:#1C1C1E;font-weight
 .io-btn:active{transform:scale(.98)}
 .roster{-webkit-user-select:none;user-select:none}
 .roster.msel .cell{touch-action:none}
+.roster .cell{-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .roster thead th[data-day],.roster tbody th[data-row]{cursor:pointer}
 .cell.sel{outline:3px solid var(--acc);outline-offset:-2px;box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 30%,transparent);border-style:solid}
 .selbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:44;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;padding:8px 10px 8px 16px;border-radius:20px;font-weight:600;max-width:calc(100vw - 20px)}
@@ -1202,7 +1203,7 @@ function viewRoster() {
     main: allStaff.length ? `<div class="tbl-wrap glass"><table class="tbl roster"><thead><tr><th class="sticky">人員</th>${days.map((d, i) => `<th data-day="${i}" title="點一下選取整天" class="${ymd(d) === td ? 'today' : ''}">週${WD[d.getDay()]}<b>${d.getMonth() + 1}/${d.getDate()}</b></th>`).join('')}</tr></thead>
       <tbody>${staff.map(p => `<tr><th class="sticky" data-row="${p.id}" title="點一下選取整週">${esc(p.name)}${is12(p) ? ' <span class="tag ok">12h</span>' : ''}<small>${[p.team, p.role, p.empNo].filter(Boolean).map(esc).join('・')}</small></th>${days.map((d, i) => { const val = dayVal(p, i); return `<td><button class="cell" data-s="${p.id}" data-i="${i}" data-v="${val}" aria-label="${esc(p.name)} 週${WD[d.getDay()]}：${val || '未排'}">${val || '＋'}</button></td>`; }).join('')}</tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">找不到符合的人員</td></tr>`}</tbody>
       <tfoot><tr><td class="sticky" style="font-size:12px;color:var(--muted)">出勤</td>${days.map((d, i) => { const c = { 早:0, 中:0, 夜:0, 日12:0, 夜12:0 }; allStaff.forEach(p => { const v = dayVal(p, i); if (c[v] !== undefined) c[v]++; }); return `<td style="font-size:12px;color:var(--muted);line-height:1.4">早${c.早} 中${c.中}<br>夜${c.夜}${hasMig ? `<br>日12：${c.日12}<br>夜12：${c.夜12}` : ''}</td>`; }).join('')}</tr></tfoot></table></div>
-      <div class="legend"><span>點格子選擇班別；電腦用滑鼠拖曳、平板開「多選」可一次框選多格（點日期／人名選整天／整週）：</span><span><i style="background:linear-gradient(140deg,#FFD60A,#FF9F0A)"></i>早班 08–16</span><span><i style="background:linear-gradient(140deg,#64D2FF,#0A84FF)"></i>中班 16–24</span><span><i style="background:linear-gradient(140deg,#7D7AFF,#5E2CA5)"></i>夜班 00–08</span><span><i style="background:linear-gradient(140deg,#5EE6A8,#18A558)"></i>移工日12 08–20</span><span><i style="background:linear-gradient(140deg,#FF6FA0,#B0245E)"></i>移工夜12 20–08</span><span><i style="background:var(--field);border:1px solid var(--line)"></i>休假</span></div>`
+      <div class="legend"><span>點格子選擇班別；電腦用滑鼠拖曳；iPad／手機長按格子約半秒再拖曳（或開「多選」）可一次框選多格；點日期／人名可選整天／整週：</span><span><i style="background:linear-gradient(140deg,#FFD60A,#FF9F0A)"></i>早班 08–16</span><span><i style="background:linear-gradient(140deg,#64D2FF,#0A84FF)"></i>中班 16–24</span><span><i style="background:linear-gradient(140deg,#7D7AFF,#5E2CA5)"></i>夜班 00–08</span><span><i style="background:linear-gradient(140deg,#5EE6A8,#18A558)"></i>移工日12 08–20</span><span><i style="background:linear-gradient(140deg,#FF6FA0,#B0245E)"></i>移工夜12 20–08</span><span><i style="background:var(--field);border:1px solid var(--line)"></i>休假</span></div>`
       : `<div class="empty glass">還沒有人員名單，先把線上人員加進來就能排班。<br><button class="btn pri" id="mg2">＋ 新增人員</button> <button class="btn" id="imp2">匯入名單</button></div>`,
     aside: `<div class="stats">${statHTML(UI.team === '全部' ? '人員數' : esc(UI.team) + '人數', allStaff.length, 'c-purple')}${statHTML('今日出勤', todayCnt === null ? '—' : todayCnt, 'c-indigo')}${statHTML('本週工時', fmt(hours, 0) + ' h', 'c-blue')}${statHTML('本週休假', off + ' 天', 'c-pink')}</div>
       <div class="panel glass"><h2><span class="bar"></span>計算公式</h2>${formulaTable([
@@ -1294,37 +1295,70 @@ function rosterBind(m) {
   const valid = new Set(RS.grid.map(rsKey)); [...RS.sel].forEach(k => { if (!valid.has(k)) RS.sel.delete(k); });
   $('.roster', m)?.classList.toggle('msel', RS.on);
   RS.grid.forEach(g => {
+    /* 滑鼠／觸控板（電腦、iPad 觸控板）：Pointer 事件 */
     g.c.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'touch') return;          // 手指觸控交給下面的 Touch 事件（iPhone／iPad 較穩定）
       RS.ptype = e.pointerType;
-      const multi = RS.on || e.pointerType === 'mouse';
-      if (!multi || e.button > 0) return;
+      if (e.button > 0) return;
       e.preventDefault();
-      if (e.shiftKey && RS.anchor) { RS.base = new Set(); rsRect(RS.anchor, g); RS.moved = true; return; }
-      RS.drag = true; RS.moved = false; RS.anchor = g; RS.ctrl = e.ctrlKey || e.metaKey;
+      if (e.shiftKey && RS.anchor) { RS.base = new Set(); rsRect(RS.anchor, g); return; }
+      RS.pdrag = true; RS.moved = false; RS.anchor = g; RS.ctrl = e.ctrlKey || e.metaKey;
       RS.base = RS.on || RS.ctrl ? new Set(RS.sel) : new Set();
       if (!RS.on && !RS.ctrl) rsRect(g, g);
     });
-    g.c.onclick = e => { if (RS.ptype === 'mouse' || RS.on) { e.preventDefault(); return; } pickShift(g.s, g.i); };
+    /* 手指：長按 0.4 秒後拖曳框選；開「多選」時直接點選／拖曳 */
+    g.c.addEventListener('touchstart', e => {
+      if (e.touches.length > 1) return;
+      RS.ptype = 'touch';
+      clearTimeout(RS.lpT); RS.lpT = null;
+      if (RS.on) { e.preventDefault(); rsTouchBegin(g, false); return; }
+      RS.lpT = setTimeout(() => { RS.lpT = null; rsTouchBegin(g, true); try { navigator.vibrate && navigator.vibrate(25); } catch (x) {} sfx('cell'); }, 400);
+    }, { passive: false });
+    g.c.addEventListener('contextmenu', e => { if (RS.ptype === 'touch') e.preventDefault(); });
+    g.c.onclick = e => { const kb = e.detail === 0;   // 鍵盤 Enter／空白鍵觸發
+      if (!kb && (RS.ptype === 'mouse' || RS.ptype === 'pen' || RS.on || RS.noClick)) { e.preventDefault(); return; } if (RS.on && kb) return; pickShift(g.s, g.i); };
   });
   // 點日期欄位＝選整天；點人名＝選整週
   $$('thead th[data-day]', m).forEach(th => th.onclick = () => { const i = +th.dataset.day; RS.base = new Set(); RS.sel = new Set(RS.grid.filter(g => g.i === i).map(rsKey)); rsPaint(); });
   $$('tbody th[data-row]', m).forEach(th => th.onclick = () => { const s = th.dataset.row; RS.base = new Set(); RS.sel = new Set(RS.grid.filter(g => g.s === s).map(rsKey)); rsPaint(); });
   rsPaint();
 }
-document.addEventListener('pointermove', e => {
-  if (!RS.drag) return;
-  const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest && el.closest('.roster .cell');
-  const g = c && RS.grid.find(x => x.c === c);
+function rsTouchBegin(g, long) {
+  RS.tdrag = true; RS.moved = false; RS.anchor = g; RS.last = g;
+  RS.base = RS.on ? new Set(RS.sel) : new Set();
+  if (long) rsRect(g, g);
+}
+function rsOver(x, y) {
+  const el = document.elementFromPoint(x, y), c = el && el.closest && el.closest('.roster .cell');
+  const g = c && RS.grid.find(q => q.c === c);
   if (g && g !== RS.last) { RS.last = g; if (g !== RS.anchor) RS.moved = true; rsRect(RS.anchor, g); }
-});
+}
+document.addEventListener('pointermove', e => { if (RS.pdrag) rsOver(e.clientX, e.clientY); });
 document.addEventListener('pointerup', () => {
-  if (!RS.drag) return; RS.drag = false; RS.last = null;
+  if (!RS.pdrag) return; RS.pdrag = false; RS.last = null;
   const k = RS.anchor && rsKey(RS.anchor);
   if (!RS.moved) {
     if (RS.on || RS.ctrl) { RS.sel = new Set(RS.base); RS.base.has(k) ? RS.sel.delete(k) : RS.sel.add(k); rsPaint(); }
     else { rsClear(); pickShift(RS.anchor.s, RS.anchor.i); }
   }
 });
+document.addEventListener('pointercancel', () => { RS.pdrag = false; RS.last = null; });
+document.addEventListener('touchmove', e => {
+  if (RS.lpT) { clearTimeout(RS.lpT); RS.lpT = null; return; }   // 長按前就移動＝捲動畫面
+  if (!RS.tdrag) return;
+  e.preventDefault();
+  const t = e.touches[0]; if (t) rsOver(t.clientX, t.clientY);
+}, { passive: false });
+function rsTouchEnd() {
+  if (RS.lpT) { clearTimeout(RS.lpT); RS.lpT = null; }
+  if (!RS.tdrag) return;
+  RS.tdrag = false; RS.last = null;
+  RS.noClick = true; setTimeout(() => { RS.noClick = false; }, 450);   // 避免放開手指時又跳出單格選單
+  if (!RS.moved && RS.on) { const k = rsKey(RS.anchor); RS.sel = new Set(RS.base); RS.base.has(k) ? RS.sel.delete(k) : RS.sel.add(k); }
+  rsPaint();
+}
+document.addEventListener('touchend', rsTouchEnd);
+document.addEventListener('touchcancel', rsTouchEnd);
 document.addEventListener('keydown', e => {
   if (currentView() !== 'roster' || dlg.open || !RS.sel.size) return;
   if (e.target && e.target.matches && e.target.matches('input,textarea,select')) return;
