@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F2F2F7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="成型產線">
 <title>成型生產課產線管理</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -197,7 +201,7 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .gbar.st-完成{background:linear-gradient(135deg,var(--green),#1E9E5A)}
 .gbar.late{box-shadow:inset 0 0 0 3px var(--red)}
 /* bottom tab (mobile) */
-.tabbar{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:20;border-radius:24px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px}
+.tabbar{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:45;border-radius:24px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px;pointer-events:auto;touch-action:manipulation}
 .tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:18px;text-decoration:none;color:var(--muted);font-size:11px;font-weight:600}
 .tabbar a svg{width:24px;height:24px}
 .tabbar a[aria-current="page"]{color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent)}
@@ -330,6 +334,13 @@ select.ctl{color:var(--ink);font-weight:600;background-color:var(--glass-strong)
 select option,select optgroup{background-color:#FFFFFF;color:#1C1C1E;font-weight:500}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) select option,:root:not([data-theme="light"]) select optgroup{background-color:#232634;color:#F2F2F7}}
 :root[data-theme="dark"] select option,:root[data-theme="dark"] select optgroup{background-color:#232634;color:#F2F2F7}
+.io-sec{margin-bottom:14px}
+.io-sec h4{margin:0 0 8px;font-size:15px}
+.io-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.io-btn{text-align:left;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--field);min-height:64px}
+.io-btn b{display:block;font-size:15px}
+.io-btn small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.io-btn:active{transform:scale(.98)}
 /* scanner */
 .scanbtn{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:10px;border:0;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);display:grid;place-items:center}
 .scanbtn svg,.iconbtn svg{width:20px;height:20px}
@@ -373,6 +384,7 @@ select option,select optgroup{background-color:#FFFFFF;color:#1C1C1E;font-weight
     </nav>
     <div class="tools">
       <span class="pill" id="sync"><span class="led"></span><span>連線中</span></span>
+      <button class="iconbtn" id="fs" aria-label="全螢幕" title="全螢幕"></button>
       <button class="iconbtn" id="sound" aria-label="聲音回饋開關" title="聲音回饋開關"></button>
       <button class="iconbtn" id="theme" aria-label="切換淺色／深色模式" title="切換淺色／深色模式">◐</button>
     </div>
@@ -458,6 +470,25 @@ const SND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 const SND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
 function paintSound() { const b = $('#sound'); b.innerHTML = soundOn ? SND_ON : SND_OFF; b.setAttribute('aria-pressed', soundOn); }
 paintSound();
+/* ---------- 全螢幕：按一次後會記住，下次開啟點畫面任一處就自動進入全螢幕 ---------- */
+const FS_IN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const FS_OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+const fsOK = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+function fsEnter() { const r = document.documentElement; const f = r.requestFullscreen || r.webkitRequestFullscreen; if (!f) return Promise.reject(new Error('no')); try { return Promise.resolve(f.call(r, { navigationUI: 'hide' })); } catch (e) { return Promise.reject(e); } }
+function fsExit() { const f = document.exitFullscreen || document.webkitExitFullscreen; if (f) try { f.call(document); } catch (e) {} }
+function paintFS() { const b = $('#fs'); b.innerHTML = fsEl() ? FS_OUT : FS_IN; b.title = fsEl() ? '離開全螢幕' : '全螢幕'; }
+paintFS();
+document.addEventListener('fullscreenchange', paintFS); document.addEventListener('webkitfullscreenchange', paintFS);
+$('#fs').onclick = () => {
+  if (fsEl()) { mem.set('autofs', false); fsExit(); toast('已關閉自動全螢幕'); return; }
+  if (!fsOK()) { toast('這個瀏覽器無法切換全螢幕，請改用「加入主畫面」開啟'); return; }
+  fsEnter().then(() => { mem.set('autofs', true); toast('已進入全螢幕，下次開啟點一下畫面就會自動全螢幕'); }).catch(() => toast('無法切換全螢幕，請改用「加入主畫面」開啟'));
+};
+if (mem.get('autofs', false)) {                     // 瀏覽器規定必須先有一次點擊才能全螢幕
+  const once = e => { if (e.target.closest && e.target.closest('#fs')) return; document.removeEventListener('pointerup', once, true); if (!fsEl() && fsOK()) fsEnter().catch(() => {}); };
+  document.addEventListener('pointerup', once, true);
+}
 $('#sound').onclick = () => { soundOn = !soundOn; mem.set('sound', soundOn); paintSound(); if (soundOn) sfx('ok'); };
 document.addEventListener('pointerdown', e => {
   const el = e.target.closest('button, a, label.btn, select, input[type="date"], input[type="checkbox"]');
@@ -739,7 +770,20 @@ const PH = { records:'搜尋產品編號、批次、人員、訂單…（搜尋�
 let rq = 0;
 function scheduleRender() { if (rq) return; rq = requestAnimationFrame(() => { rq = 0; render(); }); }
 const VIEWS = { records: viewRecords, roster: viewRoster, schedule: viewSchedule, stock: viewStock };
-function currentView() { const h = location.hash.slice(1); return VIEWS[h] ? h : 'records'; }
+let curV = VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : 'records';   // 目前頁面（不依賴網址 #，內嵌檢視器擋住也能切換）
+function currentView() { return VIEWS[curV] ? curV : 'records'; }
+function goView(v) {
+  if (!VIEWS[v]) return;
+  const changed = v !== curV; curV = v;
+  try { if (location.hash.slice(1) !== v) location.hash = v; } catch (e) {}
+  $('#filters').dataset.v = ''; render();
+  if (changed) window.scrollTo(0, 0);
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('a[data-v]');
+  if (!a) return;
+  e.preventDefault(); goView(a.dataset.v);
+});
 let lastView = '', CUR = null;
 function render() {
   const v = currentView();
@@ -933,13 +977,13 @@ function viewRecords() {
     meta: `${FD.code}・${q ? `搜尋「${esc(q)}」共 <b>${recs.length}</b> 筆` : `${md(UI.recDate)} 共 <b>${recs.length}</b> 筆`}`,
     filters: Object.keys(FORMS).map(k => `<button class="chip" data-form="${k}" aria-pressed="${k === F}">${FORMS[k].name}</button>`).join('') +
       `<input class="ctl" type="date" id="fd" value="${UI.recDate}" aria-label="日期"><button class="btn" id="tdy">今天</button>`,
-    actions: `<button class="btn" id="exp">匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
+    actions: `<button class="btn" id="exp">匯入／匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
     bindFilters: f => {
       $$('[data-form]', f).forEach(b => b.onclick = () => { UI.form = b.dataset.form; mem.set('form', UI.form); $$('[data-form]', f).forEach(x => x.setAttribute('aria-pressed', x === b)); render(); });
       $('#fd', f).onchange = e => { UI.recDate = e.target.value || today(); render(); };
       $('#tdy', f).onclick = () => { UI.recDate = today(); render(); };
       $('#add', f).onclick = () => editForm(UI.form in FORMS ? UI.form : 'report');
-      $('#exp', f).onclick = () => CUR.exp();
+      $('#exp', f).onclick = () => openIO();
     },
     exp: () => exportForm(F, recs),
     main, aside: `<div class="stats">${stats}</div>`,
@@ -1128,7 +1172,7 @@ function viewRoster() {
     meta: `${days[0].getMonth() + 1}/${days[0].getDate()} – ${days[6].getMonth() + 1}/${days[6].getDate()}`,
     filters: `<div class="weeknav"><button class="btn" id="pw" aria-label="上一週">‹</button><button class="btn" id="tw">本週</button><button class="btn" id="nw" aria-label="下一週">›</button></div>
       ${teams.length ? `<select class="ctl" id="fteam" aria-label="股別">${['全部', ...teams, ...(hasNoTeam ? ['未分股'] : [])].map(t => `<option value="${esc(t)}"${t === UI.team ? ' selected' : ''}>${t === '全部' ? '全部股別' : esc(t)}</option>`).join('')}</select>` : ''}`,
-    actions: `<button class="btn" id="copy">複製上週</button><button class="btn" id="exp">匯出</button><button class="btn pri" id="mg">人員</button>`,
+    actions: `<button class="btn" id="copy">複製上週</button><button class="btn" id="exp">匯入／匯出</button><button class="btn pri" id="mg">人員</button>`,
     bindFilters: f => {
       const sw = n => { UI.week = ymd(addDays(parseD(UI.week), n)); render(); };
       const ft = $('#fteam', f); if (ft) ft.onchange = e => { UI.team = e.target.value; render(); };
@@ -1141,7 +1185,7 @@ function viewRoster() {
         let n = 0; for (const r of src) { const id = UI.week + '_' + r.staffId; if (S.data.roster.has(id)) continue; await save('roster', id, { week: UI.week, staffId: r.staffId, days: r.days }); n++; }
         toast(n ? `已複製 ${n} 位人員（已排的不覆蓋）` : '本週每個人都排過了');
       };
-      $('#exp', f).onclick = () => CUR.exp();
+      $('#exp', f).onclick = () => openIO();
     },
     exp: () => { const wkd = [...Array(7)].map((_, i) => addDays(parseD(UI.week), i));
         exportCSV(`人員排班_${UI.week}${UI.team !== '全部' ? '_' + UI.team : ''}.csv`, ['股別','工號','姓名','職稱', ...wkd.map(d => `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`)], allStaff.map(p => [p.team, p.empNo, p.name, p.role, ...wkd.map((_, i) => dayVal(p, i))])); },
@@ -1157,7 +1201,7 @@ function viewRoster() {
         ['休假率', '休假天 ÷ (人數 × 7)', allStaff.length ? (off / (allStaff.length * 7) * 100).toFixed(1) + '%' : '—']])}</div>`,
     bind: m => {
       const m2 = $('#mg2', m); if (m2) m2.onclick = () => editStaff();
-      const i2 = $('#imp2', m); if (i2) i2.onclick = () => importStaff();
+      const i2 = $('#imp2', m); if (i2) i2.onclick = () => requirePwd(importStaff);
       $$('.cell', m).forEach(b => b.onclick = () => pickShift(b.dataset.s, +b.dataset.i));
     }
   };
@@ -1167,11 +1211,12 @@ function manageStaff() {
   openSheet({
     title: '管理人員',
     body: (staff.length ? staff.map(p => `<div class="staffrow"><div><b>${esc(p.name)}</b>${is12(p) ? ' <span class="tag ok">12h</span>' : ''}<small>${[p.team, p.role, p.empNo].filter(Boolean).map(esc).join('・')}</small></div><button type="button" class="btn sm" data-e="${p.id}">編輯</button></div>`).join('') : '<p class="hint">目前沒有人員。</p>') +
-          '<p style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn pri" id="addp">＋ 新增人員</button><button type="button" class="btn" id="imp">匯入名單</button></p>',
+          '<p style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn pri" id="addp">＋ 新增人員</button><button type="button" class="btn" id="imp">匯入名單</button><button type="button" class="btn" id="expStaff">匯出名單</button></p>',
     saveLabel: '完成', onSave: () => true
   });
   $('#addp', dlg).onclick = () => editStaff();
-  $('#imp', dlg).onclick = () => importStaff();
+  $('#imp', dlg).onclick = () => requirePwd(importStaff);
+  $('#expStaff', dlg).onclick = () => requirePwd(exportStaff);
   $$('[data-e]', dlg).forEach(b => b.onclick = () => editStaff(b.dataset.e));
 }
 /* ---------- 匯入人員名單（Excel / CSV / 複製貼上） ---------- */
@@ -1267,6 +1312,12 @@ function importStaff() {
     } catch (err) { toast(err && err.message === 'load' ? '無法載入 Excel 讀取元件，請改用 CSV 或複製貼上' : '無法讀取這個檔案，請改用 Excel 或 CSV'); }
     e.target.value = '';
   };
+}
+function exportStaff() {          // 欄位與匯入格式相同，匯出後修改可直接再匯入
+  const staff = list('staff').sort((a, b) => teamSort(a.team, b.team) || String(a.empNo || a.name).localeCompare(String(b.empNo || b.name), 'zh-Hant'));
+  if (!staff.length) { toast('目前沒有人員可以匯出'); return; }
+  exportCSV(`人員名單_${today()}.csv`, ['姓名','工號','職稱','股別','班制','備註'],
+    staff.map(p => [p.name, p.empNo, p.role, p.team, is12(p) ? '12小時兩班（移工）' : '8小時三班', p.note]));
 }
 function editStaff(id) {
   const old = id ? S.data.staff.get(id) : null;
@@ -1460,12 +1511,12 @@ function viewSchedule() {
     title: '訂單生產排程',
     meta: `顯示 <b>${shown.length}</b> 筆訂單`,
     filters: ['未完成','生產中','完成','全部'].map(s => `<button class="chip" data-st="${s}" aria-pressed="${s === UI.ordStatus}">${s}</button>`).join(''),
-    actions: `<button class="btn" id="estcfg">預估設定</button><button class="btn" id="exp">匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
+    actions: `<button class="btn" id="estcfg">預估設定</button><button class="btn" id="exp">匯入／匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
     bindFilters: f => {
       $('#estcfg', f).onclick = editEstCfg;
       $$('[data-st]', f).forEach(b => b.onclick = () => { UI.ordStatus = b.dataset.st; $$('[data-st]', f).forEach(x => x.setAttribute('aria-pressed', x === b)); render(); });
       $('#add', f).onclick = () => editOrder();
-      $('#exp', f).onclick = () => CUR.exp();
+      $('#exp', f).onclick = () => openIO();
     },
     exp: () => exportCSV(`訂單排程_${td}.csv`, ['訂單號碼','客戶','產品','訂單數量','已生產','達成率','交期','機台','模具','預計開工','預計完工','狀態','實際生產天數','首次生產日','最後生產日','日產量','日產量來源','還需天數','預估完工日','預估延遲天數','備註'],
         sorted.map(o => { const dn = producedFor(o), r = EST[o.id] || { act:{} }; return [o.orderNo, o.customer, o.part, o.qty, dn, num(o.qty) ? (dn / num(o.qty) * 100).toFixed(1) + '%' : '', o.due, o.machine, o.mold, o.start, o.end, o.status, r.act.days || '', r.act.first || '', r.act.last || '', r.rate ? Math.round(r.rate) : '', r.src || '', r.estEnd && r.rem ? r.needDays.toFixed(1) : '', r.estEnd ? ymd(r.estEnd) : '', r.late || '', o.note]; })),
@@ -1542,11 +1593,11 @@ function viewStock() {
     title: '生產庫存量表',
     meta: `共 <b>${shown.length}</b> 個品項`,
     filters: cats.map(c => `<button class="chip" data-c="${esc(c)}" aria-pressed="${c === UI.stockCat}">${esc(c)}</button>`).join(''),
-    actions: `<button class="btn" id="exp">匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
+    actions: `<button class="btn" id="exp">匯入／匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
     bindFilters: f => {
       $$('[data-c]', f).forEach(b => b.onclick = () => { UI.stockCat = b.dataset.c; $$('[data-c]', f).forEach(x => x.setAttribute('aria-pressed', x === b)); render(); });
       $('#add', f).onclick = () => editItem();
-      $('#exp', f).onclick = () => CUR.exp();
+      $('#exp', f).onclick = () => openIO();
     },
     exp: () => exportCSV(`生產庫存_${today()}.csv`, ['品號','品名／規格','類別','單位','目前庫存','安全庫存','日均出庫(14天)','可用天數','建議補貨量','儲位'],
         items.map(i => { const d = dailyOut(i.id); return [i.code, i.name, i.cat, i.unit, i.qty, i.safety, d.toFixed(2), d ? (num(i.qty) / d).toFixed(1) : '', isLow(i) ? num(i.safety) - num(i.qty) : '', i.loc]; })),
@@ -1608,8 +1659,234 @@ function moveItem(id, type) {
   });
 }
 
+/* ---------- 匯入／匯出（需密碼） ---------- */
+const IO_PWD = '6666';                     // 匯入匯出密碼
+let ioUnlockUntil = 0;                    // 輸入正確後 10 分鐘內不用再輸入
+function requirePwd(fn) {
+  if (Date.now() < ioUnlockUntil) { fn(); return; }
+  openSheet({
+    title: '請輸入密碼',
+    body: `<p class="hint" style="margin-top:0">匯入、匯出資料需要管理密碼。</p>
+      <label class="f">密碼<input class="ctl" id="pwd" type="password" inputmode="numeric" autocomplete="off" style="font-size:24px;letter-spacing:.3em;text-align:center"></label>`,
+    saveLabel: '確認',
+    onSave: () => {
+      const v = $('#pwd', dlg).value.trim();
+      if (v !== IO_PWD) { toast('密碼錯誤，請再試一次'); $('#pwd', dlg).value = ''; $('#pwd', dlg).focus(); return false; }
+      ioUnlockUntil = Date.now() + 10 * 60 * 1000;
+      setTimeout(fn, 0);
+    }
+  });
+  const p = $('#pwd', dlg); p.focus(); p.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('#ok', dlg).click(); } };
+}
+/* 各頁面的資料集合（完整備份用） */
+const IO_COLLS = { records: ['reports','forming','trimming','sheets','logs'], roster: ['staff','roster'], schedule: ['orders','config'], stock: ['items','moves'] };
+const IO_NAME = { records: '生產記錄', roster: '人員排班', schedule: '訂單排程', stock: '庫存' };
+function backupExport(v) {
+  const data = {}; IO_COLLS[v].forEach(c => data[c] = list(c));
+  const n = Object.values(data).reduce((t, a) => t + a.length, 0);
+  if (!n) { toast('目前沒有資料可以備份'); return; }
+  const blob = JSON.stringify({ app: 'shinpak-molding-line', tab: v, exported: new Date().toISOString(), data }, null, 1);
+  saveText(`備份_${IO_NAME[v]}_${today()}.json`, blob, 'application/json');
+}
+async function saveText(filename, text, type) {
+  await dlReady;
+  if (dlCap) { try { await dlCap.save({ filename, data: text }); toast('已匯出 ' + filename); } catch (e) { if (e && e.code !== 'declined') toast('這裡無法下載檔案'); } return; }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = filename; a.click(); toast('已匯出 ' + filename); } catch (e) { toast('這裡無法下載檔案'); }
+}
+function backupImport(v) {
+  let parsed = null;
+  openSheet({
+    title: `還原備份：${IO_NAME[v]}`,
+    body: `<p class="hint" style="margin-top:0">選擇之前從「${IO_NAME[v]}」匯出的備份檔（.json）。相同的資料會被備份內容覆蓋，備份裡沒有的資料不會被刪除。</p>
+      <p><label class="btn pri">選擇備份檔<input type="file" id="bkfile" accept=".json,application/json" hidden></label></p><div id="bkpv"></div>`,
+    saveLabel: '確認還原',
+    onSave: async () => {
+      if (!parsed) { toast('請先選擇備份檔'); return false; }
+      let n = 0;
+      for (const c of IO_COLLS[v]) for (const doc of (parsed.data[c] || [])) { if (!doc || !doc.id) continue; const { id, ...rest } = doc; await save(c, String(id), rest); n++; }
+      toast(`已還原 ${n} 筆資料`);
+    }
+  });
+  $('#bkfile', dlg).onchange = async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try {
+      const j = JSON.parse(await f.text());
+      if (!j || j.app !== 'shinpak-molding-line' || !j.data) throw new Error('fmt');
+      if (j.tab !== v) { toast(`這是「${IO_NAME[j.tab] || j.tab}」的備份，請到該頁面還原`); return; }
+      parsed = j;
+      $('#bkpv', dlg).innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>資料</th><th style="text-align:right">筆數</th></tr></thead><tbody>${IO_COLLS[v].map(c => `<tr><td>${c}</td><td class="n">${(j.data[c] || []).length}</td></tr>`).join('')}</tbody></table></div><p class="hint">備份時間：${esc(String(j.exported || '').slice(0, 16).replace('T', ' '))}</p>`;
+    } catch (err) { toast('無法讀取這個檔案，請確認是本系統匯出的備份檔'); }
+    e.target.value = '';
+  };
+}
+/* 通用 Excel／CSV 匯入：依標題列對應欄位 */
+const normH = h => String(h || '').replace(/[（(].*?[）)]/g, '').replace(/[\s／/]/g, '').toLowerCase();
+function normDate(v) {
+  const m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/.exec(String(v || '').trim());
+  return m ? `${m[1]}-${pad(+m[2])}-${pad(+m[3])}` : String(v || '').trim();
+}
+async function readAnyFile(f) {
+  if (/\.(xlsx|xls)$/i.test(f.name)) {
+    await loadXLSX();
+    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true });
+    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '', dateNF: 'yyyy-mm-dd' });
+  }
+  return parseText(await readFileText(f));
+}
+function mapRows(rows, fields) {     // fields: [{ key, labels:[...], type }]
+  if (!rows.length) return { items: [], matched: 0 };
+  const h = rows[0].map(normH);
+  const idx = fields.map(fd => h.findIndex(x => x && fd.labels.some(l => normH(l) === x)));
+  const matched = idx.filter(i => i >= 0).length;
+  const items = rows.slice(1).map(r => {
+    const o = {};
+    fields.forEach((fd, j) => { if (idx[j] < 0) return; let val = String(r[idx[j]] ?? '').trim();
+      if (fd.type === 'num') o[fd.key] = val === '' ? '' : num(val.replace(/,/g, '')); else if (fd.type === 'date') o[fd.key] = normDate(val); else o[fd.key] = val; });
+    return o;
+  }).filter(o => Object.values(o).some(x => x !== '' && x != null));
+  return { items, matched };
+}
+function importDialog(cfg) {      // cfg: { title, hint, fields, keyOf, findExisting, label, cols, template, saveItem }
+  let items = [];
+  const preview = d => {
+    const upd = $('#imupd', d).checked, box = $('#impv', d);
+    if (!items.length) { box.innerHTML = '<p class="hint">選擇檔案或貼上資料後，這裡會顯示預覽。</p>'; $('#ok', d).textContent = '確認匯入'; return; }
+    let nN = 0, nU = 0, nS = 0;
+    const rowsH = items.slice(0, 200).map(it => { const bad = cfg.invalid && cfg.invalid(it); const ex = !bad && cfg.findExisting(it); let st;
+      if (bad) { st = `<span class="tag bad">${esc(bad)}</span>`; nS++; } else if (ex) { if (upd) { st = '<span class="tag blue">更新</span>'; nU++; } else { st = '<span class="tag">已存在，略過</span>'; nS++; } } else { st = '<span class="tag ok">新增</span>'; nN++; }
+      return `<tr>${cfg.cols.map(([k]) => `<td>${esc(it[k] ?? '')}</td>`).join('')}<td>${st}</td></tr>`; }).join('');
+    box.innerHTML = `<p style="margin:12px 0 6px;font-weight:600">共 ${items.length} 筆：新增 ${nN}、更新 ${nU}、略過 ${nS}</p><div class="tbl-wrap" style="max-height:300px;overflow:auto;border:1px solid var(--line)"><table class="tbl"><thead><tr>${cfg.cols.map(c => `<th>${c[1]}</th>`).join('')}<th>處理</th></tr></thead><tbody>${rowsH}</tbody></table></div>`;
+    $('#ok', d).textContent = `確認匯入 ${nN + nU} 筆`;
+  };
+  const parse = (rows, d) => { const r = mapRows(rows, cfg.fields); if (!r.matched) { items = []; toast('找不到可對應的欄位標題，請先下載範本對照'); } else items = r.items; preview(d); };
+  openSheet({
+    title: cfg.title,
+    body: `<p class="hint" style="margin-top:0">${cfg.hint} 支援 Excel（.xlsx）或 CSV，第一列放欄位名稱（與匯出的檔案相同）。也可以從 Excel 複製後貼到下方。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><label class="btn pri">選擇檔案<input type="file" id="imfile" accept=".xlsx,.xls,.csv,.txt" hidden></label><button type="button" class="btn" id="imtpl">下載範本</button></div>
+      <textarea class="ctl" id="impaste" style="width:100%;height:auto;min-height:100px;padding:10px 12px;font-size:16px" placeholder="或在這裡貼上資料（含標題列）"></textarea>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:15px"><input type="checkbox" id="imupd" checked style="width:20px;height:20px">${cfg.label}相同時，更新原有資料</label><div id="impv"></div>`,
+    onInput: d => { const t = $('#impaste', d).value; if (t.trim()) parse(parseText(t), d); else if (!d.dataset.file) { items = []; preview(d); } else preview(d); },
+    onSave: async d => {
+      const upd = $('#imupd', d).checked; let n = 0;
+      for (const it of items) { if (cfg.invalid && cfg.invalid(it)) continue; const ex = cfg.findExisting(it); if (ex && !upd) continue; await cfg.saveItem(it, ex); n++; }
+      if (!n) { toast('沒有可以匯入的資料'); return false; }
+      toast(`已匯入 ${n} 筆`);
+    }
+  });
+  delete dlg.dataset.file;
+  $('#imtpl', dlg).onclick = () => exportCSV(cfg.template.name, cfg.template.headers, cfg.template.rows || []);
+  $('#imfile', dlg).onchange = async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try { const rows = await readAnyFile(f); dlg.dataset.file = '1'; $('#impaste', dlg).value = ''; parse(rows, dlg); }
+    catch (err) { toast(err && err.message === 'load' ? '無法載入 Excel 讀取元件，請改用 CSV 或複製貼上' : '無法讀取這個檔案，請改用 Excel 或 CSV'); }
+    e.target.value = '';
+  };
+}
+/* 各頁面的匯入設定 */
+function importFormRecords(F) {
+  const FD = FORMS[F];
+  const fs = FD.sections.flatMap(s => s.fields).filter(f => f[2] !== 'table');
+  const fields = fs.map(f => ({ key: f[0], type: f[2] === 'spec' || f[2] === 'num' ? 'num' : f[2] === 'date' ? 'date' : 'text',
+    labels: f[2] === 'spec' ? [f[3].l, f[0]] : [f[1], f[0]] }));
+  const keyOf = it => F === 'sheet' ? [it.date, it.time, it.batch, it.rollNo].join('|') : [it.date, it.shift, it.machine, it.part].join('|');
+  importDialog({
+    title: `匯入${FD.name}`, hint: `資料會依「${F === 'sheet' ? '日期＋時間＋批次＋支號' : '日期＋班別＋機台＋產品編號'}」比對是否已存在。`,
+    fields, label: '同一筆記錄', cols: (F === 'sheet' ? [['date','日期'],['time','時間'],['part','產品'],['batch','批次'],['rollNo','支號']] : [['date','日期'],['shift','班別'],['machine','機台'],['part','產品編號']]),
+    invalid: it => !it.part ? '缺產品編號' : !/^\d{4}-\d{2}-\d{2}$/.test(it.date || '') ? '日期格式錯誤' : '',
+    findExisting: it => list(FD.coll).find(x => keyOf(x) === keyOf(it)),
+    template: { name: `${FD.name}_匯入範本.csv`, headers: fs.map(f => f[2] === 'spec' ? f[3].l + (f[3].u ? `(${f[3].u})` : '') : f[1]) },
+    saveItem: async (it, ex) => save(FD.coll, ex ? ex.id : uid(), { ...(ex ? (({ id, ...r }) => r)(ex) : {}), ...it, ts: ex ? (ex.ts || Date.now()) : Date.now(), updated: Date.now() })
+  });
+}
+function importRosterWeek() {
+  const wk = parseD(UI.week), days = [...Array(7)].map((_, i) => addDays(wk, i));
+  const valid = [...SHIFT_CYCLE, ...SHIFT_CYCLE_12, ...LEAVES];
+  let items = [];
+  importDialog({
+    title: `匯入排班：${days[0].getMonth() + 1}/${days[0].getDate()} – ${days[6].getMonth() + 1}/${days[6].getDate()}`,
+    hint: '會匯入到目前畫面上的這一週，依工號（沒有工號時用姓名）對應人員；第 1～7 個日期欄依序是週一到週日。班別可填：早、中、夜、日12、夜12、休、特休、病假、事假、公假。',
+    fields: [{ key:'empNo', labels:['工號'] }, { key:'name', labels:['姓名'] }, ...days.map((d, i) => ({ key: 'd' + i, labels: [`${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`, `${d.getMonth() + 1}/${d.getDate()}`, '週' + WD[d.getDay()], WD[d.getDay()]] }))],
+    label: '人員', cols: [['empNo','工號'], ['name','姓名'], ...days.map((d, i) => ['d' + i, `${d.getMonth() + 1}/${d.getDate()}`])],
+    invalid: it => { const p = staffOf(it); if (!p) return '找不到人員'; const bad = days.map((_, i) => it['d' + i]).filter(x => x && !valid.includes(x)); return bad.length ? '班別無法辨識：' + bad[0] : ''; },
+    findExisting: it => { const p = staffOf(it); return p && S.data.roster.get(UI.week + '_' + p.id) ? { id: UI.week + '_' + p.id } : null; },
+    template: { name: `排班匯入範本_${UI.week}.csv`, headers: ['股別','工號','姓名','職稱', ...days.map(d => `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`)],
+      rows: list('staff').slice(0, 3).map(p => [p.team, p.empNo, p.name, p.role, ...days.map(() => '')]) },
+    saveItem: async it => { const p = staffOf(it); await save('roster', UI.week + '_' + p.id, { week: UI.week, staffId: p.id, days: days.map((_, i) => it['d' + i] || '') }); }
+  });
+}
+function staffOf(it) { const st = list('staff'); return (it.empNo && st.find(p => String(p.empNo) === String(it.empNo))) || (it.name && st.find(p => p.name === it.name)) || null; }
+const ORDER_IO = [ ['orderNo','訂單號碼'], ['customer','客戶'], ['part','產品'], ['qty','訂單數量','num'], ['unit','數量單位'], ['perBox','每箱入數','num'], ['due','交期','date'],
+  ['machine','機台'], ['mold','模具'], ['start','預計開工','date'], ['end','預計完工','date'], ['planRate','標準日產量','num'], ['status','狀態'], ['note','備註'] ];
+function exportOrdersAll() {
+  const os = list('orders'); if (!os.length) { toast('目前沒有訂單'); return; }
+  const EST = estimateAll();
+  exportCSV(`訂單資料_${today()}.csv`, [...ORDER_IO.map(x => x[1]), '已生產', '實際生產天數', '預估完工日', '預估延遲天數'],
+    os.map(o => { const r = EST[o.id] || { act:{} }; return [...ORDER_IO.map(x => o[x[0]]), producedFor(o), r.act.days || '', r.estEnd ? ymd(r.estEnd) : '', r.late || '']; }));
+}
+function importOrders() {
+  importDialog({
+    title: '匯入訂單', hint: '依「訂單號碼」比對，已存在的訂單會更新資料（已生產數量由生產日報自動計算，不需匯入）。',
+    fields: ORDER_IO.map(([k, l, t]) => ({ key: k, labels: [l, k, ...(k === 'part' ? ['產品編號','產品料號／品名','料號'] : k === 'machine' ? ['預排機台'] : [])], type: t || 'text' })),
+    label: '訂單號碼', cols: [['orderNo','訂單號碼'], ['customer','客戶'], ['part','產品'], ['qty','數量'], ['due','交期']],
+    invalid: it => !it.orderNo ? '缺訂單號碼' : (it.status && !['待排','排定','生產中','暫停','完成'].includes(it.status)) ? '狀態無法辨識' : '',
+    findExisting: it => findOrder(String(it.orderNo)),
+    template: { name: '訂單匯入範本.csv', headers: ORDER_IO.map(x => x[1]), rows: [['SO-001','客戶A','PA-A1191','500','箱','','2026-12-01','AS-1','M24046300','2026-11-20','2026-11-28','80','排定','']] },
+    saveItem: async (it, ex) => { const base = ex ? (({ id, ...r }) => r)(ex) : { status: '待排', unit: '箱' }; const data = { ...base };
+      Object.keys(it).forEach(k => { if (it[k] !== '' || !ex) data[k] = it[k]; }); if (!data.status) data.status = '待排'; data.updated = Date.now();
+      await save('orders', ex ? ex.id : uid(), data); }
+  });
+}
+const ITEM_IO = [ ['code','品號'], ['name','品名／規格'], ['cat','類別'], ['unit','單位'], ['qty','目前庫存','num'], ['safety','安全庫存','num'], ['loc','儲位'] ];
+function importItems() {
+  importDialog({
+    title: '匯入庫存品項', hint: '依「品號」（沒有品號時用品名）比對。更新時會用檔案裡的「目前庫存」覆蓋，適合盤點後一次更新。',
+    fields: ITEM_IO.map(([k, l, t]) => ({ key: k, labels: [l, k, ...(k === 'name' ? ['品名','規格'] : [])], type: t || 'text' })),
+    label: '品號（或品名）', cols: [['code','品號'], ['name','品名'], ['cat','類別'], ['qty','庫存'], ['unit','單位']],
+    invalid: it => !it.name && !it.code ? '缺品號與品名' : '',
+    findExisting: it => list('items').find(i => (it.code && i.code && String(i.code) === String(it.code)) || (!it.code && it.name && i.name === it.name)),
+    template: { name: '庫存匯入範本.csv', headers: ITEM_IO.map(x => x[1]), rows: [['R-PET-01','PET 膠片 0.25mm×800','原料','kg','1200','500','A-01']] },
+    saveItem: async (it, ex) => { const base = ex ? (({ id, ...r }) => r)(ex) : { cat: '原料', qty: 0 }; const data = { ...base };
+      Object.keys(it).forEach(k => { if (it[k] !== '' || !ex) data[k] = it[k]; }); if (!data.name) data.name = data.code; if (data.qty === '') data.qty = 0; data.updated = Date.now();
+      await save('items', ex ? ex.id : uid(), data); }
+  });
+}
+function exportMoves() {
+  const ms = list('moves').sort((a, b) => (b.ts || 0) - (a.ts || 0)); if (!ms.length) { toast('目前沒有異動紀錄'); return; }
+  exportCSV(`庫存異動_${today()}.csv`, ['日期','品號','品名','類型','數量','單號／說明','經手人'],
+    ms.map(m => { const it = S.data.items.get(m.itemId) || {}; return [m.date, it.code || '', it.name || m.itemName || '', m.type === 'in' ? '入庫' : '出庫', m.qty, m.ref, m.by]; }));
+}
+/* 匯入／匯出 選單 */
+function openIO() {
+  requirePwd(() => {
+    const v = currentView(), F = FORMS[UI.form] ? UI.form : 'report', FN = FORMS[F].name;
+    const B = (id, label, sub, cls = '') => `<button type="button" class="io-btn ${cls}" data-io="${id}"><b>${label}</b><small>${sub}</small></button>`;
+    const sets = {
+      records: { ex: [B('cur', `目前畫面（${FN}）`, 'Excel／CSV'), B('allForm', `全部${FN}`, 'Excel／CSV，所有日期'), B('bk', '完整備份', '四種表單全部資料（.json）')],
+                 im: [F === 'report' ? '' : B('imForm', `匯入${FN}`, 'Excel／CSV'), B('rs', '還原備份', '從 .json 備份檔還原')], note: F === 'report' ? '生產日報含多個表格，請用「完整備份／還原備份」搬移資料；Excel 匯出可用於報表。' : '' },
+      roster: { ex: [B('cur', '本週排班表', 'Excel／CSV'), B('staffEx', '人員名單', 'Excel／CSV'), B('bk', '完整備份', '人員＋所有排班（.json）')],
+                im: [B('imRoster', '匯入本週排班', 'Excel／CSV'), B('staffIm', '匯入人員名單', 'Excel／CSV'), B('rs', '還原備份', '從 .json 備份檔還原')] },
+      schedule: { ex: [B('cur', '目前畫面', 'Excel／CSV（含交期預估）'), B('ordAll', '全部訂單資料', 'Excel／CSV，可修改後再匯入'), B('bk', '完整備份', '訂單＋預估設定（.json）')],
+                  im: [B('imOrd', '匯入訂單', 'Excel／CSV'), B('rs', '還原備份', '從 .json 備份檔還原')] },
+      stock: { ex: [B('cur', '庫存量表', 'Excel／CSV'), B('mv', '異動紀錄', 'Excel／CSV'), B('bk', '完整備份', '品項＋異動（.json）')],
+               im: [B('imItem', '匯入庫存品項', 'Excel／CSV（盤點更新）'), B('rs', '還原備份', '從 .json 備份檔還原')] }
+    }[v];
+    openSheet({
+      title: `${IO_NAME[v]}・匯入／匯出`,
+      body: `<div class="io-sec"><h4>📤 匯出</h4><div class="io-grid">${sets.ex.join('')}</div></div>
+        <div class="io-sec"><h4>📥 匯入</h4><div class="io-grid">${sets.im.join('')}</div>${sets.note ? `<p class="hint">${sets.note}</p>` : ''}</div>
+        <p class="hint">密碼驗證後 10 分鐘內不用再輸入。建議每週做一次「完整備份」。</p>`
+    });
+    const act = {
+      cur: () => CUR && CUR.exp && CUR.exp(), allForm: () => exportForm(F, list(FORMS[F].coll).sort((a, b) => String(b.date).localeCompare(String(a.date)))),
+      bk: () => backupExport(v), rs: () => backupImport(v), imForm: () => importFormRecords(F),
+      staffEx: exportStaff, staffIm: importStaff, imRoster: importRosterWeek, ordAll: exportOrdersAll, imOrd: importOrders, mv: exportMoves, imItem: importItems
+    };
+    $$('[data-io]', dlg).forEach(b => b.onclick = () => { const k = b.dataset.io; if (/^(im|rs|staffIm)/.test(k)) { dlg.close(); setTimeout(act[k], 0); } else act[k](); });
+  });
+}
+
 /* ---------- 啟動 ---------- */
-window.addEventListener('hashchange', () => { $('#filters').dataset.v = ''; render(); });
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS[h] && h !== curV) { curV = h; $('#filters').dataset.v = ''; render(); } });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme(theme));
 loadLocal(); setSync(); render(); connect();
 setInterval(() => { if (!dlg.open && !(document.activeElement && document.activeElement.matches('input,select,textarea'))) render(); }, 60000);
