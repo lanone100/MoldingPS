@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F2F7">
+<title>成型生產課產線管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --bg:#EEF1F8; --ink:#1C1C1E; --muted:#6C6C72; --line:rgba(60,60,67,.14);
+  --glass:rgba(255,255,255,.58); --glass-strong:rgba(255,255,255,.78); --glass-brd:rgba(255,255,255,.75);
+  --field:rgba(255,255,255,.72); --shadow:0 10px 30px rgba(40,50,90,.12);
+  --blue:#007AFF; --purple:#AF52DE; --orange:#FF9500; --green:#34C759; --red:#FF3B30; --pink:#FF2D55; --teal:#30B0C7; --indigo:#5856D6; --yellow:#FFCC00;
+  --blob1:#7FB2FF; --blob2:#E3A6FF; --blob3:#FFC58A; --blob4:#8EE6C4;
+  --acc:var(--blue);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#06070C; --ink:#F2F2F7; --muted:#A1A1AA; --line:rgba(235,235,245,.12);
+    --glass:rgba(30,32,44,.55); --glass-strong:rgba(36,38,52,.82); --glass-brd:rgba(255,255,255,.09);
+    --field:rgba(255,255,255,.07); --shadow:0 12px 34px rgba(0,0,0,.45);
+    --blue:#0A84FF; --purple:#BF5AF2; --orange:#FF9F0A; --green:#30D158; --red:#FF453A; --pink:#FF375F; --teal:#40C8E0; --indigo:#5E5CE6; --yellow:#FFD60A;
+    --blob1:#1D4FBF; --blob2:#6A1F9A; --blob3:#8A3B12; --blob4:#0E6B52;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#06070C; --ink:#F2F2F7; --muted:#A1A1AA; --line:rgba(235,235,245,.12);
+  --glass:rgba(30,32,44,.55); --glass-strong:rgba(36,38,52,.82); --glass-brd:rgba(255,255,255,.09);
+  --field:rgba(255,255,255,.07); --shadow:0 12px 34px rgba(0,0,0,.45);
+  --blue:#0A84FF; --purple:#BF5AF2; --orange:#FF9F0A; --green:#30D158; --red:#FF453A; --pink:#FF375F; --teal:#40C8E0; --indigo:#5E5CE6; --yellow:#FFD60A;
+  --blob1:#1D4FBF; --blob2:#6A1F9A; --blob3:#8A3B12; --blob4:#0E6B52;
+  color-scheme:dark;
+}
+body[data-view="records"]{--acc:var(--blue)}
+body[data-view="roster"]{--acc:var(--purple)}
+body[data-view="schedule"]{--acc:var(--orange)}
+body[data-view="stock"]{--acc:var(--green)}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 150px);-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--glass-strong);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px)}
+.bgfx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bgfx{background:linear-gradient(180deg,#C9DEFF 0%,#F9DCEA 100%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bgfx{background:linear-gradient(180deg,#0B1D44 0%,#2E0F3A 100%)}}
+:root[data-theme="dark"] .bgfx{background:linear-gradient(180deg,#0B1D44 0%,#2E0F3A 100%)}
+.bgfx i{display:none}
+.bgfx i:nth-child(1){width:55vmax;height:55vmax;left:-15vmax;top:-18vmax;background:var(--blob1)}
+.bgfx i:nth-child(2){width:45vmax;height:45vmax;right:-14vmax;top:8vmax;background:var(--blob2)}
+.bgfx i:nth-child(3){width:40vmax;height:40vmax;left:20vmax;bottom:-20vmax;background:var(--blob3)}
+.bgfx i:nth-child(4){width:30vmax;height:30vmax;right:6vmax;bottom:-6vmax;background:var(--blob4)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 60%,transparent);outline-offset:2px}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);border:1px solid var(--glass-brd);box-shadow:var(--shadow)}
+
+/* ===== header ===== */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;padding:10px 14px 12px;border-radius:0 0 24px 24px;border-top:0}
+.top-row{display:flex;align-items:center;gap:10px;max-width:1440px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.01em;white-space:nowrap}
+.logo .mark{display:none}
+.tools .mark{height:28px;padding:3px 6px;border-radius:8px;background:#fff;display:grid;place-items:center;box-shadow:0 1px 4px rgba(190,15,40,.15);border:1px solid rgba(190,15,40,.12);flex-shrink:0;box-sizing:border-box;margin-left:2px}
+.tools .mark img{height:100%;width:auto;display:block}
+.logo .mark-img{height:34px;width:auto;display:block;flex:none}
+.logo small{display:block;font-size:12px;color:var(--muted);font-weight:500;line-height:1.2}
+.seg{display:none;margin:0 auto;padding:4px;border-radius:14px;background:var(--field);border:1px solid var(--line);gap:2px}
+.seg a{padding:8px 18px;border-radius:10px;text-decoration:none;color:var(--ink);font-weight:600;font-size:15px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.seg a .dot{width:9px;height:9px;border-radius:50%}
+.seg a[aria-current="page"]{background:var(--glass-strong);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.tools{display:flex;align-items:center;gap:8px;margin-left:auto}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 10px;border-radius:20px;background:var(--field);border:1px solid var(--line);white-space:nowrap}
+.pill .led{width:8px;height:8px;border-radius:50%;background:var(--orange)}
+.pill.cloud .led{background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 25%,transparent)}
+.iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--field);display:grid;place-items:center;font-size:18px}
+.searchbar{max-width:1440px;margin:10px auto 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.search{flex:1 1 260px;position:relative;min-width:0}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted)}
+.search input{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--field);padding:0 38px 0 38px;font-size:16px}
+.search .clr{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:var(--muted);font-size:18px}
+#filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--field);padding:0 12px;font-size:16px;min-width:0}
+.btn{height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--field);font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.pri{background:var(--acc);border-color:transparent;color:#fff;box-shadow:0 6px 16px color-mix(in srgb,var(--acc) 35%,transparent)}
+.btn.danger{color:var(--red)}
+.btn.danger.armed{background:var(--red);color:#fff;border-color:transparent}
+.btn.sm{height:36px;padding:0 12px;font-size:14px;border-radius:10px}
+.btn:active,.chip:active,.cell:active{transform:scale(.97)}
+.chip{height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--line);background:var(--field);font-weight:600;font-size:14px;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--acc);color:#fff;border-color:transparent}
+
+/* ===== layout ===== */
+.wrap{max-width:1440px;margin:0 auto;padding:16px 14px 110px;display:grid;gap:16px}
+.view-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.view-title h1{margin:0;font-size:28px;font-weight:700;letter-spacing:.01em}
+.view-title .meta{color:var(--muted);font-size:15px}
+.view-title .meta b{color:var(--acc)}
+.layout{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.panel{border-radius:22px;padding:16px}
+.panel h2{font-size:17px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.panel h2 .bar{width:4px;height:18px;border-radius:2px;background:var(--acc)}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{border-radius:18px;padding:12px 14px;position:relative;overflow:hidden}
+.stat span{font-size:13px;color:var(--muted);font-weight:500}
+.stat b{display:block;font-size:28px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.stat::after{content:"";position:absolute;right:-18px;top:-18px;width:62px;height:62px;border-radius:50%;background:var(--c,var(--acc));opacity:.22}
+.stat.c-blue{--c:var(--blue)} .stat.c-green{--c:var(--green)} .stat.c-red{--c:var(--red)} .stat.c-orange{--c:var(--orange)} .stat.c-purple{--c:var(--purple)} .stat.c-teal{--c:var(--teal)} .stat.c-pink{--c:var(--pink)} .stat.c-indigo{--c:var(--indigo)}
+.stat.alert b{color:var(--red)}
+/* formula table */
+.ftable{width:100%;border-collapse:collapse;font-size:14px}
+.ftable th,.ftable td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.ftable th{font-size:12px;color:var(--muted);font-weight:600}
+.ftable td:first-child{font-weight:600;white-space:nowrap}
+.ftable code{font-family:var(--font);font-size:13px;background:var(--field);border:1px solid var(--line);padding:1px 7px;border-radius:7px;display:inline-block;line-height:1.6}
+.ftable td.v{text-align:right;font-weight:700;color:var(--acc);white-space:nowrap;font-variant-numeric:tabular-nums}
+/* list cards */
+.list{display:flex;flex-direction:column;gap:10px}
+.card{border-radius:18px;padding:14px 16px;width:100%;text-align:left;display:grid;gap:4px 14px;grid-template-columns:auto 1fr auto;align-items:center}
+.card .badge{min-width:56px;height:56px;padding:0 8px;border-radius:16px;display:grid;place-items:center;font-weight:700;font-size:17px;color:#fff;background:linear-gradient(140deg,var(--acc),color-mix(in srgb,var(--acc) 55%,var(--purple)))}
+.card .t{font-weight:700;font-size:17px;line-height:1.3}
+.card .s{font-size:13px;color:var(--muted);line-height:1.45}
+.card .r{text-align:right;font-variant-numeric:tabular-nums}
+.card .r b{font-size:20px;display:block;line-height:1.2}
+.card .r small{font-size:12px;color:var(--muted)}
+.card .r .ng{color:var(--red)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:9px;background:var(--field);border:1px solid var(--line)}
+.tag.ok{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green);border-color:transparent}
+.tag.warn{background:color-mix(in srgb,var(--orange) 20%,transparent);color:var(--orange);border-color:transparent}
+.tag.bad{background:color-mix(in srgb,var(--red) 18%,transparent);color:var(--red);border-color:transparent}
+.tag.blue{background:color-mix(in srgb,var(--blue) 18%,transparent);color:var(--blue);border-color:transparent}
+.progress{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:6px 0 2px}
+.progress i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--orange),var(--pink))}
+.progress.done i{background:var(--green)}
+.empty{border-radius:22px;padding:36px 20px;text-align:center;color:var(--muted)}
+.empty .btn{margin-top:14px}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0}
+/* simple tables */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:18px}
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
+.tbl th,.tbl td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.tbl thead th{font-size:12px;color:var(--muted);font-weight:600;position:sticky;top:0}
+.tbl td.n{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.tbl tr.low td.n{color:var(--red)}
+.tbl .nm{background:none;border:0;padding:0;font-weight:700;text-align:left}
+.tbl .sticky{position:sticky;left:0;background:var(--glass-strong);z-index:1}
+/* roster */
+.roster th,.roster td{text-align:center;padding:6px 4px}
+.roster th.sticky,.roster td.sticky{text-align:left;padding-left:12px}
+.roster thead th b{display:block;font-size:16px;color:var(--ink)}
+.roster thead th.today b{color:var(--acc)}
+.roster th small{display:block;font-size:11px;color:var(--muted);font-weight:500}
+.cell{width:100%;min-width:46px;height:46px;border-radius:12px;border:1.5px dashed var(--line);background:transparent;font-weight:700;font-size:16px;color:var(--muted)}
+.cell[data-v="早"]{background:linear-gradient(140deg,#FFD60A,#FF9F0A);color:#3A2600;border:0}
+.cell[data-v="中"]{background:linear-gradient(140deg,#64D2FF,#0A84FF);color:#fff;border:0}
+.cell[data-v="夜"]{background:linear-gradient(140deg,#7D7AFF,#5E2CA5);color:#fff;border:0}
+.cell[data-v="日12"]{background:linear-gradient(140deg,#5EE6A8,#18A558);color:#fff;border:0;font-size:14px}
+.cell[data-v="夜12"]{background:linear-gradient(140deg,#FF6FA0,#B0245E);color:#fff;border:0;font-size:14px}
+.cell[data-v="休"]{background:var(--field);border:1px solid var(--line);color:var(--muted)}
+.cell[data-v="特休"]{background:color-mix(in srgb,var(--teal) 24%,transparent);color:var(--teal);border:0;font-size:14px}
+.cell[data-v="病假"]{background:color-mix(in srgb,var(--red) 20%,transparent);color:var(--red);border:0;font-size:14px}
+.cell[data-v="事假"]{background:color-mix(in srgb,var(--orange) 22%,transparent);color:var(--orange);border:0;font-size:14px}
+.cell[data-v="公假"]{background:color-mix(in srgb,var(--indigo) 22%,transparent);color:var(--indigo);border:0;font-size:14px}
+.pick-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.pick-head b{font-size:18px}
+.pick-group{margin:0 0 12px;padding:12px 14px;border-radius:18px;background:var(--field);border:1px solid var(--line)}
+.pick-group h4{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
+.pick-group h4 .tag{font-weight:600}
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.pick-grid .cell{height:60px;font-size:18px;line-height:1.15}
+.pick-grid .cell small{display:block;font-size:11px;font-weight:500;opacity:.9}
+.pick-grid .cell.cur{outline:3px solid var(--acc);outline-offset:2px}
+.pick-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+.pick-foot label{display:flex;align-items:center;gap:8px;font-size:15px;flex:1}
+.pick-foot input{width:20px;height:20px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px}
+/* gantt */
+.gantt{display:grid;min-width:760px;font-size:12px}
+.gantt .gh{text-align:center;color:var(--muted);padding:4px 0 8px;line-height:1.2}
+.gantt .gh b{display:block;font-size:14px;color:var(--ink)}
+.gantt .gh.today b{color:#fff;background:var(--acc);border-radius:8px;margin:0 4px}
+.gantt .lane{font-weight:700;font-size:15px;padding:8px 10px;display:flex;align-items:center;border-top:1px solid var(--line);position:sticky;left:0;background:var(--glass-strong);z-index:1}
+.gantt .track{border-top:1px solid var(--line);position:relative;display:grid;padding:6px 0;gap:4px;align-items:center}
+.gantt .tline{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--acc) 14%,transparent)}
+.gbar{position:relative;min-height:38px;border-radius:10px;padding:3px 8px;font-size:12px;line-height:1.25;text-align:left;border:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#fff;background:linear-gradient(135deg,var(--orange),var(--pink));font-weight:700}
+.gbar small{display:block;font-weight:500;opacity:.9}
+.gbar.st-待排{background:var(--field);color:var(--ink);border:1px dashed var(--muted)}
+.gbar.st-排定{background:linear-gradient(135deg,var(--teal),var(--blue))}
+.gbar.st-暫停{background:linear-gradient(135deg,#C7C7CC,#8E8E93)}
+.gbar.st-完成{background:linear-gradient(135deg,var(--green),#1E9E5A)}
+.gbar.late{box-shadow:inset 0 0 0 3px var(--red)}
+/* bottom tab (mobile) */
+.tabbar{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:20;border-radius:24px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:18px;text-decoration:none;color:var(--muted);font-size:11px;font-weight:600}
+.tabbar a svg{width:24px;height:24px}
+.tabbar a[aria-current="page"]{color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent)}
+/* sheet */
+dialog{border:0;padding:0;color:var(--ink);background:transparent;width:100%;max-width:100%;max-height:100%;margin:auto 0 0;}
+dialog::backdrop{background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.sheet{display:flex;flex-direction:column;max-height:92vh;border-radius:26px 26px 0 0;background:var(--glass-strong);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--glass-brd);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 0}
+.sheet header{display:flex;align-items:center;gap:10px;padding:10px 18px 12px}
+.sheet header h3{margin:0;font-size:20px;flex:1}
+.sheet .body{overflow:auto;padding:0 18px 16px}
+.sheet footer{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+.sheet footer .sp{flex:1}
+fieldset{border:0;padding:14px;margin:0 0 12px;border-radius:18px;background:var(--field);border:1px solid var(--line)}
+legend{float:left;width:100%;font-weight:700;font-size:15px;padding:0;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+legend::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--acc)}
+legend+*{clear:both}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500;min-width:0}
+.f .ctl{width:100%;color:var(--ink);font-size:17px;height:46px;background:var(--glass-strong)}
+.f textarea.ctl{height:auto;min-height:80px;padding:10px 12px}
+.f.wide{grid-column:1/-1}
+.uw{position:relative}
+.uw .ctl{padding-right:46px;font-weight:600;font-variant-numeric:tabular-nums}
+.uw em{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--muted);font-size:13px;pointer-events:none}
+.qf{display:flex;gap:4px;flex-wrap:wrap;min-height:0}
+.qf button{border:0;background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc);font-size:12px;font-weight:600;padding:3px 9px;border-radius:9px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.calc{border-radius:18px;padding:12px 14px;background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 16%,transparent),color-mix(in srgb,var(--purple) 12%,transparent));border:1px solid var(--line)}
+.calc h4{margin:0 0 6px;font-size:14px}
+.calc .ftable td.v{font-size:16px}
+.draft{display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--yellow) 22%,transparent);margin-bottom:12px}
+.draft button{margin-left:auto}
+.staffrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.staffrow div{flex:1}
+.staffrow small{color:var(--muted);margin-left:6px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);padding:12px 18px;border-radius:16px;font-weight:600;font-size:15px;z-index:60;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.weeknav{display:flex;align-items:center;gap:6px}
+.weeknav b{min-width:120px;text-align:center;font-size:15px}
+.hide-m{display:none}
+
+/* ===== PC：橫式版面 ===== */
+@media (min-width:900px){
+  body{font-size:17px}
+  .top{padding:12px 24px 14px;margin:0 16px;border-radius:0 0 26px 26px}
+  .seg{display:flex}
+  .tabbar{display:none}
+  .wrap{padding:22px 24px 40px}
+  .layout{grid-template-columns:minmax(0,1fr) 360px;align-items:start}
+  .layout aside{position:sticky;top:calc(env(safe-area-inset-top,0px) + 140px);display:grid;gap:16px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  dialog{width:min(920px,94vw);margin:auto}
+  .sheet{border-radius:26px;max-height:88vh}
+  .sheet .grab{display:none}
+  .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .toast{bottom:32px}
+  .hide-m{display:revert}
+  .card{grid-template-columns:auto 1.4fr 1fr auto}
+}
+@media (min-width:1280px){ .layout{grid-template-columns:minmax(0,1fr) 400px} }
+/* 隱藏計算公式：右側公式面板不顯示，表單「即時計算」只留結果 */
+aside .panel:has(.ftable){display:none}
+.ftable th:nth-child(2),.ftable td:nth-child(2){display:none}
+
+/* ===== 甘特圖 ===== */
+.gx-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.gx-tools h2{margin:0;flex:1}
+.gx-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:16px}
+.gx{min-width:var(--w);position:relative}
+.gx-row{display:grid;grid-template-columns:96px 1fr}
+.gx-name{position:sticky;left:0;z-index:3;background:var(--glass-strong);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);padding:8px 10px;font-weight:700;font-size:15px;display:flex;flex-direction:column;justify-content:center;border-top:1px solid var(--line)}
+.gx-name small{font-size:11px;color:var(--muted);font-weight:500}
+.gx-head .gx-name{border-top:0;font-size:12px;color:var(--muted)}
+.gx-days{display:grid;grid-template-columns:repeat(var(--n),1fr)}
+.gx-days div{text-align:center;font-size:11px;color:var(--muted);padding:4px 0 6px;line-height:1.2;border-left:1px solid var(--line)}
+.gx-days div b{display:block;font-size:14px;color:var(--ink)}
+.gx-days div.we{background:color-mix(in srgb,var(--muted) 9%,transparent)}
+.gx-days div.td b{color:#fff;background:var(--acc);border-radius:7px;margin:0 3px}
+.gx-days div.m1 b{color:var(--acc)}
+.gx-track{position:relative;border-top:1px solid var(--line);background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:calc(100% / var(--n)) 100%}
+.gx-we{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--muted) 9%,transparent)}
+.gx-now{position:absolute;top:0;bottom:0;width:2px;background:var(--pink);z-index:2;box-shadow:0 0 8px var(--pink)}
+.gx-head .gx-now::before{content:"現在";position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;color:#fff;background:var(--pink);padding:0 5px;border-radius:6px;white-space:nowrap}
+.gx-plan{position:absolute;height:4px;border-radius:2px;background:repeating-linear-gradient(90deg,var(--muted) 0 6px,transparent 6px 10px);opacity:.7}
+.gx-bar{position:absolute;height:38px;border-radius:11px;border:0;padding:0;overflow:hidden;color:#fff;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:8px;z-index:1}
+.gx-bar .fill{position:absolute;inset:0 auto 0 0;background:rgba(255,255,255,.28)}
+.gx-bar .lb{position:relative;display:block;padding:3px 9px;font-size:12px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gx-bar .lb small{display:block;font-weight:500;opacity:.92;font-size:11px}
+.gx-bar.s-run{background:linear-gradient(135deg,#FF9F0A,#FF375F)}
+.gx-bar.s-plan{background:linear-gradient(135deg,#40C8E0,#0A84FF)}
+.gx-bar.s-wait{background:linear-gradient(135deg,#A1A1AA,#6E6E78)}
+.gx-bar.s-pause{background:repeating-linear-gradient(135deg,#8E8E93 0 8px,#AEAEB2 8px 16px)}
+.gx-bar.s-done{background:linear-gradient(135deg,#30D158,#1E9E5A)}
+.gx-bar.s-late{box-shadow:0 0 0 3px var(--red),0 4px 12px rgba(255,59,48,.35)}
+.gx-due{position:absolute;width:0;border-left:2px dashed var(--red);z-index:2}
+.gx-due span{position:absolute;top:-1px;left:3px;font-size:10px;font-weight:700;color:#fff;background:var(--red);padding:0 4px;border-radius:5px;white-space:nowrap}
+.gx-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-top:10px}
+.gx-legend i{display:inline-block;width:22px;height:10px;border-radius:4px;vertical-align:-1px;margin-right:5px}
+
+/* ===== 生產表單 ===== */
+.spec{font-size:11px;color:var(--muted);font-weight:500}
+.uw.oos .ctl{border-color:var(--red);background:color-mix(in srgb,var(--red) 12%,var(--glass-strong));color:var(--red)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:8px}
+.et{border-collapse:collapse;min-width:100%}
+.et th{font-size:12px;color:var(--muted);font-weight:600;padding:4px;text-align:left;white-space:nowrap}
+.et th small{display:block;font-weight:500;font-size:10px;opacity:.85}
+.et td{padding:3px}
+.et .ctl{height:42px;font-size:15px;min-width:78px;width:100%;padding:0 8px;background:var(--glass-strong)}
+.et input[type=time].ctl{min-width:100px}
+.et td.fx{font-weight:700;white-space:nowrap;padding-right:10px;color:var(--ink);font-size:14px}
+.et td.fx small{display:block;font-weight:500;font-size:10px;color:var(--muted)}
+.okng[data-v="OK"]{color:var(--green);font-weight:700}
+.okng[data-v="NG"]{color:#fff;background:var(--red);font-weight:700}
+.rowdel{width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--muted);font-size:16px}
+.ct{width:100%;border-collapse:collapse;font-size:14px}
+.ct th,.ct td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.ct thead th{text-align:center;font-size:12px;color:var(--muted)}
+.ct thead th:first-child,.ct thead th:nth-child(2){text-align:left}
+.ct td.v{text-align:center;font-weight:700;font-variant-numeric:tabular-nums;min-width:64px}
+.ct td.v.bad{color:#fff;background:var(--red);border-radius:8px}
+.ct .sp{color:var(--muted);font-size:12px;font-weight:500}
+.ct tr.gh td{font-weight:700;color:var(--acc);background:color-mix(in srgb,var(--acc) 9%,transparent);font-size:13px}
+.shbtn{border:0;background:color-mix(in srgb,var(--acc) 15%,transparent);color:var(--acc);font-weight:700;border-radius:10px;padding:6px 10px;min-width:74px;font-size:14px}
+.shbtn small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+.shbtn.add{background:transparent;border:1.5px dashed var(--line);color:var(--muted)}
+.ch{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.badge2{min-width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-weight:700;color:#fff;background:linear-gradient(140deg,var(--acc),color-mix(in srgb,var(--acc) 55%,var(--purple)))}
+/* 下拉選單：選項清單用不透明底色，深淺色模式都看得清楚 */
+select.ctl{color:var(--ink);font-weight:600;background-color:var(--glass-strong)}
+select option,select optgroup{background-color:#FFFFFF;color:#1C1C1E;font-weight:500}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) select option,:root:not([data-theme="light"]) select optgroup{background-color:#232634;color:#F2F2F7}}
+:root[data-theme="dark"] select option,:root[data-theme="dark"] select optgroup{background-color:#232634;color:#F2F2F7}
+/* scanner */
+.scanbtn{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:10px;border:0;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);display:grid;place-items:center}
+.scanbtn svg,.iconbtn svg{width:20px;height:20px}
+.sw{position:relative}
+.sw .ctl{padding-right:48px}
+#scanner{width:100%;height:100%;height:100dvh;max-width:100%;max-height:100%;max-height:100dvh;margin:0;background:#000;color:#fff}
+.scan-close{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:3;height:44px;padding:0 16px 0 12px;border-radius:22px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#fff;font-size:16px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.scan-close svg{width:20px;height:20px}
+.scan-top{padding-right:120px!important;padding-left:120px!important}
+@media (max-width:520px){.scan-top{padding-left:16px!important;text-align:left!important}}
+.scan-bottom #sccancel{background:rgba(255,69,58,.85)!important;border-color:transparent!important}
+#scanner::backdrop{background:#000}
+.scan-wrap{position:relative;height:100%;display:flex;flex-direction:column}
+.scan-wrap video{flex:1;width:100%;min-height:0;object-fit:cover;background:#000}
+.scan-frame{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:min(78vw,460px);height:min(42vw,220px);border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);border:3px solid rgba(255,255,255,.9);pointer-events:none}
+.scan-frame::after{content:"";position:absolute;left:8%;right:8%;top:50%;height:2px;background:#FF375F;box-shadow:0 0 12px #FF375F}
+.scan-top{position:absolute;top:0;left:0;right:0;padding:calc(14px + env(safe-area-inset-top,0px)) 18px 14px;text-align:center;background:linear-gradient(180deg,rgba(0,0,0,.65),transparent)}
+.scan-top h3{margin:0;font-size:19px}
+.scan-top p{margin:4px 0 0;font-size:14px;opacity:.85}
+.scan-bottom{padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));background:rgba(20,20,24,.92);display:grid;gap:10px}
+.scan-bottom .row2{display:flex;gap:8px}
+.scan-bottom input{flex:1;height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;padding:0 12px;font-size:17px}
+.scan-bottom .btn{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.2);color:#fff}
+.scan-bottom .btn.pri{background:#0A84FF;border-color:transparent}
+.scan-bottom label.btn{cursor:pointer}
+.scan-bottom input[type=file]{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body data-view="records">
+<div class="bgfx" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+<header class="top glass">
+  <div class="top-row">
+    <div class="logo"><img class="mark-img" src="data:image/png;base64,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" alt="SHINPAK 欣泛亞" width="58" height="34"><span>成型生產課產線<small id="today-meta"></small></span></div>
+    <nav class="seg" aria-label="功能選單">
+      <a href="#records" data-v="records"><span class="dot" style="background:var(--blue)"></span>生產記錄</a>
+      <a href="#roster" data-v="roster"><span class="dot" style="background:var(--purple)"></span>人員排班</a>
+      <a href="#schedule" data-v="schedule"><span class="dot" style="background:var(--orange)"></span>訂單排程</a>
+      <a href="#stock" data-v="stock"><span class="dot" style="background:var(--green)"></span>庫存</a>
+    </nav>
+    <div class="tools">
+      <span class="pill" id="sync"><span class="led"></span><span>連線中</span></span>
+      <button class="iconbtn" id="sound" aria-label="聲音回饋開關" title="聲音回饋開關"></button>
+      <button class="iconbtn" id="theme" aria-label="切換淺色／深色模式" title="切換淺色／深色模式">◐</button>
+    </div>
+  </div>
+  <div class="searchbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="搜尋" autocomplete="off" enterkeyhint="search">
+      <button class="clr" id="qclr" aria-label="清除搜尋" hidden>✕</button>
+    </div>
+    <button class="iconbtn" id="scanq" aria-label="掃描條碼" title="掃描條碼"></button>
+    <div id="filters"></div>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<nav class="tabbar glass" aria-label="功能選單">
+  <a href="#records" data-v="records"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>生產記錄</a>
+  <a href="#roster" data-v="roster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18.2 14.4c1.3.8 2.1 2.3 2.4 4.6"/></svg>人員排班</a>
+  <a href="#schedule" data-v="schedule"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M7 14h6M10 17h7"/></svg>訂單排程</a>
+  <a href="#stock" data-v="stock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>庫存</a>
+</nav>
+
+<dialog id="sheet"></dialog>
+<dialog id="scanner"></dialog>
+<div class="toast glass" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- 小工具 ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const parseD = s => { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, (m || 1) - 1, d || 1); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const num = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+const has = v => v !== '' && v !== null && v !== undefined;
+const fmt = (n, d = 2) => Number(n || 0).toLocaleString('zh-TW', { maximumFractionDigits: d });
+const WD = ['日','一','二','三','四','五','六'];
+const SCAN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 9v6M11 9v6M14 9v6M17 9v6"/></svg>';
+const md = s => s ? String(s).slice(5).replace('-', '/') : '—';
+function curShift() { const h = new Date().getHours(); return h >= 8 && h < 16 ? '早班' : h >= 16 ? '中班' : '夜班'; }
+function mondayOf(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return addDays(x, -((x.getDay() + 6) % 7)); }
+const mem = { get(k, d) { try { const v = localStorage.getItem('mfg_mem_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+              set(k, v) { try { localStorage.setItem('mfg_mem_' + k, JSON.stringify(v)); } catch (e) {} },
+              del(k) { try { localStorage.removeItem('mfg_mem_' + k); } catch (e) {} } };
+let toastT;
+function toast(msg) { sfx(/請|失敗|無法|不足|找不到|不能|中斷|權限|注意/.test(msg) ? 'err' : /^已/.test(msg) ? 'ok' : ''); const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400); }
+
+/* ---------- 淺色／深色 ---------- */
+const THEMES = ['auto', 'light', 'dark'], THEME_ICON = { auto:'◐', light:'☀︎', dark:'☾' }, THEME_NAME = { auto:'跟隨系統', light:'淺色模式', dark:'深色模式' };
+function applyTheme(t) {
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+  $('#theme').textContent = THEME_ICON[t];
+  const dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  $('meta[name="theme-color"]').setAttribute('content', dark ? '#0B1D44' : '#C9DEFF');
+}
+let theme = mem.get('theme', 'auto'); applyTheme(theme);
+$('#theme').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; mem.set('theme', theme); applyTheme(theme); toast(THEME_NAME[theme]); };
+
+/* ---------- 聲音回饋（Web Audio 即時合成，不需音檔） ---------- */
+var actx = null, soundOn = mem.get('sound', true);
+function sfx(kind) {
+  if (!kind || !soundOn) return;
+  try {
+    if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; actx = new AC(); }
+    if (actx.state === 'suspended') actx.resume();
+    const t0 = actx.currentTime;
+    const tone = (f, st, dur, type, vol) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0 + st);
+      g.gain.setValueAtTime(0.0001, t0 + st); g.gain.exponentialRampToValueAtTime(vol, t0 + st + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t0 + st + dur);
+      o.connect(g); g.connect(actx.destination); o.start(t0 + st); o.stop(t0 + st + dur + 0.03); };
+    if (kind === 'tap') tone(1500, 0, 0.045, 'sine', 0.09);            // 輕點：短促「滴」
+    else if (kind === 'cell') tone(1100, 0, 0.06, 'sine', 0.1);       // 排班格子
+    else if (kind === 'ok') { tone(880, 0, 0.12, 'sine', 0.13); tone(1320, 0.09, 0.2, 'sine', 0.13); }   // 成功：上揚雙音
+    else if (kind === 'err') { tone(330, 0, 0.13, 'triangle', 0.16); tone(220, 0.12, 0.2, 'triangle', 0.16); } // 錯誤：下降雙音
+  } catch (e) {}
+}
+const SND_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+const SND_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+function paintSound() { const b = $('#sound'); b.innerHTML = soundOn ? SND_ON : SND_OFF; b.setAttribute('aria-pressed', soundOn); }
+paintSound();
+$('#sound').onclick = () => { soundOn = !soundOn; mem.set('sound', soundOn); paintSound(); if (soundOn) sfx('ok'); };
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest('button, a, label.btn, select, input[type="date"], input[type="checkbox"]');
+  if (!el || el.id === 'sound' || el.disabled) return;
+  sfx(el.classList.contains('cell') ? 'cell' : 'tap');
+}, true);
+
+/* ---------- 資料層：雲端同步（多台裝置共用），無法連線時改用本機 ---------- */
+const COLLS = { logs:{order:'ts',limit:800}, staff:{}, roster:{}, orders:{}, items:{}, moves:{order:'ts',limit:400}, config:{}, forming:{order:'ts',limit:600}, trimming:{order:'ts',limit:600}, sheets:{order:'ts',limit:800}, reports:{order:'ts',limit:400} };
+const S = { mode:'local', db:null, data:{} };
+for (const c in COLLS) S.data[c] = new Map();
+function loadLocal() { for (const c in COLLS) { try { const raw = localStorage.getItem('mfg_' + c); if (raw) S.data[c] = new Map(Object.entries(JSON.parse(raw))); } catch (e) {} } }
+function persistLocal(c) { try { localStorage.setItem('mfg_' + c, JSON.stringify(Object.fromEntries(S.data[c]))); } catch (e) {} }
+function setSync() { const el = $('#sync'); el.className = 'pill ' + S.mode; el.lastElementChild.textContent = S.mode === 'cloud' ? '雲端同步' : '本機模式'; el.title = S.mode === 'cloud' ? '資料即時同步到所有裝置' : '資料只存在這台裝置'; }
+async function connect() {
+  let db = null;
+  try { if (window.claude && window.claude.use) db = await window.claude.use('db'); } catch (e) {}
+  if (!db) { S.mode = 'local'; setSync(); return; }
+  S.db = db; S.mode = 'cloud';
+  for (const c in COLLS) S.data[c] = new Map();
+  setSync(); render();
+  for (const c in COLLS) {
+    let q = db.collection(c); const o = COLLS[c];
+    if (o.order) q = q.orderBy(o.order, 'desc').limit(o.limit);
+    q.onSnapshot(snap => { S.data[c] = new Map(snap.docs.map(d => [d.id, d.data()])); scheduleRender(); },
+                 err => toast('同步中斷，請重新整理頁面（' + (err && err.code || '') + '）'));
+  }
+}
+async function save(c, id, obj) {
+  const body = JSON.parse(JSON.stringify(obj));
+  if (S.mode === 'cloud') {
+    try { await S.db.collection(c).doc(id).set(body); }
+    catch (e) { toast(e && e.code === 'permission_denied' ? '你的權限只能檢視，無法儲存' : '儲存失敗，請再試一次'); throw e; }
+  } else { S.data[c].set(id, body); persistLocal(c); scheduleRender(); }
+}
+async function removeDoc(c, id) {
+  if (S.mode === 'cloud') { try { await S.db.collection(c).doc(id).delete(); } catch (e) { toast('刪除失敗，請再試一次'); throw e; } }
+  else { S.data[c].delete(id); persistLocal(c); scheduleRender(); }
+}
+const list = c => [...S.data[c]].map(([id, v]) => ({ id, ...v }));
+
+/* ---------- 建議清單 & 最近輸入 ---------- */
+function uniq(arr) { return [...new Set(arr.filter(v => has(v) && String(v).trim() !== '').map(String))].sort((a, b) => a.localeCompare(b, 'zh-Hant')); }
+function suggestions() {
+  const logs = list('logs'), orders = list('orders'), items = list('items');
+  const fm = list('forming'), tr = list('trimming'), sh = list('sheets'), rp = list('reports');
+  return {
+    machine: uniq(['ASANO_FLC','ASANO_PLP & PLS','AS-1','SS-1', ...logs.map(x => x.machine), ...orders.map(x => x.machine), ...fm.map(x => x.machine), ...tr.map(x => x.machine)]),
+    mold: uniq([...logs.map(x => x.mold), ...orders.map(x => x.mold), ...fm.map(x => x.mold), ...tr.flatMap(x => [x.plpMold, x.plsMold])]),
+    part: uniq([...logs.map(x => x.part), ...orders.map(x => x.part), ...fm.map(x => x.part), ...tr.map(x => x.part), ...sh.map(x => x.part), ...rp.flatMap(x => (x.outT || []).map(r => r.part))]),
+    fileName: uniq([...fm.map(x => x.fileName), ...tr.flatMap(x => [x.plpFile, x.plsFile])]),
+    batch: uniq([...sh.map(x => x.batch), ...rp.flatMap(x => (x.sheetT || []).map(r => r.batch))]),
+    orderNo: uniq(orders.filter(o => o.status !== '完成').map(x => x.orderNo)),
+    staffName: uniq(list('staff').map(x => x.name)),
+    team: uniq([...TEAMS, ...list('staff').map(x => x.team)]).sort(teamSort),
+    material: uniq(logs.map(x => x.material)),
+    ngReason: uniq(['毛邊','短射','氣泡','黑點','白霧','縮水','結晶','偏心','拉絲', ...logs.map(x => x.ngReason)]),
+    customer: uniq(orders.map(x => x.customer)),
+    unit: uniq(['kg','pcs','箱','包','捲', ...items.map(x => x.unit)])
+  };
+}
+/* 最近輸入過的值（新到舊、不重複），做成「快速填入」小按鈕 */
+function recentVals(coll, key, n) {
+  const src = list(coll).sort((a, b) => (b.ts || b.updated || 0) - (a.ts || a.updated || 0));
+  const out = [];
+  for (const x of src) { const v = x[key]; if (has(v) && String(v).trim() !== '' && !out.includes(String(v))) { out.push(String(v)); if (out.length >= n) break; } }
+  return out;
+}
+
+/* ---------- 表單欄位定義（要加欄位改這裡） ---------- */
+const LOG_SECTIONS = [
+  { title:'基本資料', fields:[
+    ['date','日期','date'], ['shift','班別','select',['早班','中班','夜班']], ['machine','機台','text','list:machine'],
+    ['mold','模具編號','text','list:mold'], ['part','產品料號／品名','text','list:part'], ['orderNo','訂單號碼','text','list:orderNo'],
+    ['operator','記錄人員','text','list:staffName'] ]},
+  { title:'原料與乾燥', copy:true, fields:[
+    ['material','原料規格','text','list:material'], ['lot','原料批號','text'], ['dryTemp','乾燥溫度','num','℃'],
+    ['dryHours','乾燥時間','num','h'], ['dewPoint','露點','num','℃'] ]},
+  { title:'溫度設定', copy:true, fields:[
+    ['z1','料管 1 區','num','℃'], ['z2','料管 2 區','num','℃'], ['z3','料管 3 區','num','℃'], ['z4','料管 4 區','num','℃'],
+    ['nozzle','噴嘴','num','℃'], ['hotRunner','熱澆道','num','℃'], ['moldTemp','模具溫度','num','℃'], ['chiller','冰水溫度','num','℃'] ]},
+  { title:'射出條件', copy:true, fields:[
+    ['injPress','射出壓力','num','bar'], ['injSpeed','射出速度','num','mm/s'], ['holdPress','保壓壓力','num','bar'],
+    ['holdTime','保壓時間','num','s'], ['coolTime','冷卻時間','num','s'], ['backPress','背壓','num','bar'],
+    ['shotSize','計量位置','num','mm'], ['cycle','成型週期','num','s'], ['cavity','模穴數','num','穴'] ]},
+  { title:'產出與品質', fields:[
+    ['weight','產品重量','num','g'], ['good','良品數','num','pcs'], ['ng','不良數','num','pcs'],
+    ['ngReason','不良原因','text','list:ngReason'], ['note','備註／異常處理','textarea'] ]}
+];
+const ORDER_SECTIONS = [
+  { title:'訂單資料', fields:[
+    ['orderNo','訂單號碼','text'], ['customer','客戶','text','list:customer'], ['part','產品料號／品名','text','list:part'],
+    ['qty','訂單數量','num'], ['unit','數量單位','select',['箱','pcs']], ['perBox','每箱入數','num','pcs'], ['due','交期','date'] ]},
+  { title:'排程', fields:[
+    ['machine','預排機台','text','list:machine'], ['mold','模具編號','text','list:mold'],
+    ['start','預計開工','date'], ['end','預計完工','date'], ['planRate','標準日產量（未開工時預估用）','num','/天'], ['status','狀態','select',['待排','排定','生產中','暫停','完成']],
+    ['note','備註','textarea'] ]}
+];
+const ITEM_SECTIONS = [
+  { title:'品項資料', fields:[
+    ['code','品號','text'], ['name','品名／規格','text'], ['cat','類別','select',['原料','成品','半成品','包材','其他']],
+    ['unit','單位','text','list:unit'], ['qty','目前庫存','num'], ['safety','安全庫存','num'], ['loc','儲位','text'] ]}
+];
+const TEAMS = ['甲股','乙股','丙股','日勤股'];   // 股別（班別）預設選項，可在這裡修改
+const teamRank = t => { const i = TEAMS.indexOf(t || ''); return i < 0 ? (t ? 50 : 99) : i; };
+const teamSort = (a, b) => teamRank(a) - teamRank(b) || String(a || '').localeCompare(String(b || ''), 'zh-Hant');
+const STAFF_SECTIONS = [
+  { title:'人員資料', fields:[
+    ['name','姓名','text'], ['empNo','工號','text'], ['role','職稱','select',['股長','工程師','副工程師','助理工程師','班長','技術員','派遣工']], ['team','股別（班別）','text','list:team'], ['shiftType','班制','select',['8小時三班','12小時兩班（移工）']], ['note','備註','text'] ]}
+];
+
+const SCAN_KEYS = new Set(['machine','mold','part','orderNo','material','lot','code','ref','batch','rollNo','fileName']);
+function scanWrap(key, inputHTML) { return SCAN_KEYS.has(key) ? `<span class="sw">${inputHTML}<button type="button" class="scanbtn" data-scan="${key}" aria-label="掃描條碼填入" title="掃描條碼">${SCAN_SVG}</button></span>` : inputHTML; }
+function fieldHTML([key, label, type, extra], v, sug, quick) {
+  const val = v[key] ?? '';
+  const qf = quick && quick[key] && quick[key].length ? `<span class="qf">${quick[key].map(q => `<button type="button" data-fill="${key}" data-val="${esc(q)}" title="快速填入">${esc(q)}</button>`).join('')}</span>` : '';
+  if (type === 'table') return `<div class="f wide">${label ? `<span>${label}</span>` : ''}${tblHTML(key, v[key], sug)}</div>`;
+  if (type === 'spec') { const it = extra, neg = (it.max != null && it.max < 0) || (it.min != null && it.min < 0);
+    return `<label class="f">${esc(it.l)}<span class="uw"><input class="ctl" name="${key}" type="text" ${neg ? '' : 'inputmode="decimal"'} autocomplete="off" value="${esc(val)}">${it.u ? `<em>${esc(it.u)}</em>` : ''}</span>${it.spec ? `<span class="spec" data-spec-of="${key}">規格 ${esc(specText(it, v.material))}</span>` : ''}${qf}</label>`; }
+  if (type === 'textarea') return `<label class="f wide">${label}<textarea class="ctl" name="${key}">${esc(val)}</textarea>${qf}</label>`;
+  if (type === 'select') { const opts = has(val) && !extra.includes(val) ? [...extra, val] : extra; return `<label class="f">${label}<select class="ctl" name="${key}">${opts.map(o => `<option${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`; }
+  if (type === 'num') return `<label class="f">${label}<span class="uw"><input class="ctl" name="${key}" type="text" inputmode="decimal" autocomplete="off" value="${esc(val)}">${extra ? `<em>${esc(extra)}</em>` : ''}</span>${qf}</label>`;
+  if (type === 'date' || type === 'time') return `<label class="f">${label}<input class="ctl" name="${key}" type="${type}" value="${esc(val)}"></label>`;
+  if (extra && extra.startsWith('list:')) {
+    const k = extra.slice(5), id = 'dl_' + key;
+    return `<label class="f">${label}${scanWrap(key, `<input class="ctl" name="${key}" list="${id}" autocomplete="off" value="${esc(val)}">`)}<datalist id="${id}">${(sug[k] || []).map(o => `<option value="${esc(o)}">`).join('')}</datalist>${qf}</label>`;
+  }
+  return `<label class="f">${label}${scanWrap(key, `<input class="ctl" name="${key}" autocomplete="off" value="${esc(val)}">`)}${qf}</label>`;
+}
+function formHTML(sections, v, quick) {
+  const sug = suggestions();
+  return sections.map(s => `<fieldset><legend>${s.title}</legend><div class="grid">${s.fields.map(f => fieldHTML(f, v, sug, quick)).join('')}</div></fieldset>`).join('');
+}
+function readForm(root, sections) {
+  const out = {};
+  for (const s of sections) for (const [key, , type] of s.fields) {
+    if (type === 'table') { if (root.querySelector(`[data-table="${key}"]`)) out[key] = readTable(root, key); continue; }
+    const el = root.querySelector(`[name="${key}"]`); if (!el) continue;
+    const raw = el.value.trim();
+    out[key] = (type === 'num' || type === 'spec') ? (raw === '' ? '' : num(raw)) : raw;
+  }
+  return out;
+}
+function fillForm(root, data) { for (const k in data) {
+  if (Array.isArray(data[k])) { const tb = root.querySelector(`[data-table="${k}"] tbody`); if (tb && TBL[k]) tb.innerHTML = tblBody(k, data[k]); continue; }
+  const el = root.querySelector(`[name="${k}"]`); if (el && has(data[k])) el.value = data[k]; } }
+
+/* ---------- 彈出表單（含草稿記憶） ---------- */
+const dlg = $('#sheet');
+function openSheet({ title, body, onSave, onDelete, saveLabel = '儲存', extraBtn, draftKey, sections, onInput, onScan }) {
+  dlg.innerHTML = `<form class="sheet" onsubmit="return false"><div class="grab"></div>
+    <header><h3>${title}</h3>${extraBtn ? `<button type="button" class="btn sm" id="xbtn">${extraBtn.label}</button>` : ''}</header>
+    <div class="body"><div id="draftbar"></div>${body}</div>
+    <footer>${onDelete ? '<button type="button" class="btn danger" id="del">刪除</button>' : ''}<span class="sp"></span>
+      <button type="button" class="btn" id="cancel">取消</button>${onSave ? `<button type="button" class="btn pri" id="ok">${saveLabel}</button>` : ''}</footer></form>`;
+  const close = () => dlg.close();
+  $('#cancel', dlg).onclick = close;
+  // 草稿：新增時若上次沒存就關掉，會自動恢復
+  if (draftKey && sections) {
+    const dr = mem.get('draft_' + draftKey, null);
+    if (dr) {
+      fillForm(dlg, dr);
+      $('#draftbar', dlg).innerHTML = `<div class="draft">已恢復上次未儲存的內容<button type="button" class="btn sm" id="dclr">清空重填</button></div>`;
+      $('#dclr', dlg).onclick = () => { mem.del('draft_' + draftKey); dlg.close(); setTimeout(() => openSheet(arguments[0]), 0); };
+    }
+    dlg.oninput = () => { mem.set('draft_' + draftKey, readForm(dlg, sections)); onInput && onInput(dlg); };
+  } else dlg.oninput = () => onInput && onInput(dlg);
+  dlg.onclick = async e => {
+    const sb = e.target.closest('[data-scan]');
+    if (sb) { e.preventDefault(); const key = sb.dataset.scan; const v = await scanCode('掃描「' + (sb.closest('.f')?.firstChild?.textContent || '') + '」');
+      if (v) { const el = $(`[name="${key}"]`, dlg); if (el) { el.value = v; el.dispatchEvent(new Event('input', { bubbles:true })); } onScan && onScan(key, v, dlg); } return; }
+    const b = e.target.closest('[data-fill]'); if (!b) return; const el = $(`[name="${b.dataset.fill}"]`, dlg); if (el) { el.value = b.dataset.val; el.dispatchEvent(new Event('input', { bubbles:true })); } };
+  if (onSave) $('#ok', dlg).onclick = async () => { try { const r = await onSave(dlg); if (r !== false) { if (draftKey) mem.del('draft_' + draftKey); close(); } } catch (e) {} };
+  if (extraBtn) $('#xbtn', dlg).onclick = () => { extraBtn.onClick(dlg); dlg.dispatchEvent(new Event('input')); };
+  if (onDelete) {
+    const b = $('#del', dlg); let armed = false, t;
+    b.onclick = async () => {
+      if (!armed) { armed = true; b.classList.add('armed'); b.textContent = '再按一次刪除'; t = setTimeout(() => { armed = false; b.classList.remove('armed'); b.textContent = '刪除'; }, 3000); return; }
+      clearTimeout(t); try { await onDelete(); close(); toast('已刪除'); } catch (e) {}
+    };
+  }
+  dlg.showModal();
+  onInput && onInput(dlg);
+}
+
+/* ---------- 相機掃描條碼（ZXing，支援一維條碼與 QR Code） ---------- */
+let zxLoad = null;
+function loadZX() {
+  if (window.ZXing) return Promise.resolve();
+  if (!zxLoad) zxLoad = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js'; s.onload = res; s.onerror = () => { zxLoad = null; rej(new Error('load')); }; document.head.appendChild(s); });
+  return zxLoad;
+}
+function scanCode(title = '掃描條碼') {
+  return new Promise(resolve => {
+    const sc = $('#scanner'); let reader = null, finished = false;
+    sc.innerHTML = `<div class="scan-wrap"><video playsinline muted></video><div class="scan-frame"></div>
+      <div class="scan-top"><h3>${esc(title)}</h3><p id="scmsg">正在開啟相機…</p></div>
+      <button class="scan-close" id="scclose" aria-label="關閉掃描"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>關閉</button>
+      <div class="scan-bottom"><div class="row2"><input id="scman" placeholder="或手動輸入條碼" autocomplete="off" enterkeyhint="done"><button class="btn pri" id="scok">確定</button></div>
+      <div class="row2"><label class="btn" style="flex:1">拍照辨識<input type="file" accept="image/*" capture="environment" id="scfile"></label><button class="btn" id="sccancel" style="flex:1">取消</button></div></div></div>`;
+    const msg = t => { const m = $('#scmsg', sc); if (m) m.textContent = t; };
+    const finish = v => {
+      if (finished) return; finished = true;
+      try { reader && reader.reset(); } catch (e) {}
+      const vd = $('video', sc); if (vd && vd.srcObject) { vd.srcObject.getTracks().forEach(t => t.stop()); vd.srcObject = null; }
+      sc.close(); sc.innerHTML = '';
+      if (v) { try { navigator.vibrate && navigator.vibrate(60); } catch (e) {} toast('已讀取：' + v); }
+      resolve(v ? String(v).trim() : null);
+    };
+    $('#sccancel', sc).onclick = () => finish(null);
+    $('#scclose', sc).onclick = () => finish(null);
+    $('#scok', sc).onclick = () => { const v = $('#scman', sc).value.trim(); if (v) finish(v); else msg('請輸入條碼內容'); };
+    $('#scman', sc).onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('#scok', sc).click(); } };
+    sc.oncancel = e => { e.preventDefault(); finish(null); };
+    $('#scfile', sc).onchange = async e => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      msg('辨識照片中…');
+      try { await loadZX(); const r2 = new ZXing.BrowserMultiFormatReader(); const url = URL.createObjectURL(f);
+        const res = await r2.decodeFromImageUrl(url); URL.revokeObjectURL(url); finish(res.getText()); }
+      catch (err) { msg('照片裡找不到條碼，請靠近一點、對準條碼再拍一次。'); }
+    };
+    sc.showModal();
+    (async () => {
+      try {
+        await loadZX();
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nomedia');
+        reader = new ZXing.BrowserMultiFormatReader();
+        await reader.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' } } }, $('video', sc), (result) => { if (result && !finished) finish(result.getText()); });
+        msg('把條碼放進框內，會自動讀取');
+      } catch (err) {
+        if (finished) return;
+        msg(err && err.message === 'load' ? '掃描元件載入失敗，請確認網路後再試，或手動輸入。'
+          : '無法直接開啟相機（可能未允許相機權限）。請改按「拍照辨識」或手動輸入。');
+      }
+    })();
+  });
+}
+/* 用條碼找訂單／品項 */
+const findOrder = v => list('orders').find(o => o.orderNo && String(o.orderNo).toLowerCase() === v.toLowerCase());
+const findItem = v => list('items').find(i => (i.code && String(i.code).toLowerCase() === v.toLowerCase()) || (i.name && i.name === v));
+async function globalScan() {
+  const v = await scanCode('掃描條碼'); if (!v) return;
+  const view = currentView();
+  if (view === 'stock') {
+    const it = findItem(v);
+    if (!it) { toast('找不到這個品號，請建立新品項'); editItem(null, { code: v }); return; }
+    openSheet({ title: it.name, body: `<p style="margin:4px 0 14px">品號 <b>${esc(it.code || '—')}</b>・目前庫存 <b>${fmt(it.qty)} ${esc(it.unit || '')}</b></p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button type="button" class="btn pri" id="gin" style="height:60px;background:var(--green)">入庫</button><button type="button" class="btn pri" id="gout" style="height:60px;background:var(--orange)">出庫</button></div>
+      <p><button type="button" class="btn" id="ged" style="width:100%">編輯品項</button></p>` });
+    $('#gin', dlg).onclick = () => { dlg.close(); moveItem(it.id, 'in'); };
+    $('#gout', dlg).onclick = () => { dlg.close(); moveItem(it.id, 'out'); };
+    $('#ged', dlg).onclick = () => { dlg.close(); editItem(it.id); };
+    return;
+  }
+  if (view === 'schedule') { const o = findOrder(v); if (o) { editOrder(o.id); return; } }
+  $('#q').value = v; UI.q[view] = v; render();
+}
+
+/* ---------- CSV 匯出 ---------- */
+let dlCap; const dlReady = (async () => { try { dlCap = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { dlCap = null; } })();
+async function exportCSV(filename, headers, rows) {
+  const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const text = '\ufeff' + [headers, ...rows].map(r => r.map(cell).join(',')).join('\r\n');
+  await dlReady;
+  if (dlCap) { try { await dlCap.save({ filename, data: text }); toast('已匯出 ' + filename); } catch (e) { if (e && e.code !== 'declined') toast('這裡無法下載檔案'); } return; }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type:'text/csv' })); a.download = filename; a.click(); } catch (e) { toast('這裡無法下載檔案'); }
+}
+
+/* ---------- 共用計算 ---------- */
+const hourRate = (cycle, cav) => num(cycle) > 0 ? 3600 / num(cycle) * (num(cav) || 1) : 0;   // 理論時產
+const ngRate = (g, n) => (num(g) + num(n)) ? num(n) / (num(g) + num(n)) * 100 : 0;
+const formulaTable = rows => `<table class="ftable"><thead><tr><th>項目</th><th>公式</th><th style="text-align:right">數值</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r[0]}</td><td><code>${r[1]}</code></td><td class="v">${r[2]}</td></tr>`).join('')}</tbody></table>`;
+const statHTML = (label, val, cls = '') => `<div class="stat glass ${cls}"><span>${label}</span><b>${val}</b></div>`;
+function matchQ(obj, q) { if (!q) return true; q = q.toLowerCase(); return Object.values(obj).some(v => String(v ?? '').toLowerCase().includes(q)); }
+
+/* ---------- 畫面狀態 & 繪製 ---------- */
+const UI = { form: mem.get('form', 'report'), gz: mem.get('gz', '4週'), team:'全部', q:{ records:'', roster:'', schedule:'', stock:'' }, recDate: today(), recMachine:'', week: ymd(mondayOf(new Date())), ordStatus:'未完成', stockCat:'全部' };
+const PH = { records:'搜尋產品編號、批次、人員、訂單…（搜尋全部日期）', roster:'搜尋人員姓名、工號、職務', schedule:'搜尋訂單號碼、客戶、料號、機台', stock:'搜尋品號、品名、儲位' };
+let rq = 0;
+function scheduleRender() { if (rq) return; rq = requestAnimationFrame(() => { rq = 0; render(); }); }
+const VIEWS = { records: viewRecords, roster: viewRoster, schedule: viewSchedule, stock: viewStock };
+function currentView() { const h = location.hash.slice(1); return VIEWS[h] ? h : 'records'; }
+let lastView = '', CUR = null;
+function render() {
+  const v = currentView();
+  document.body.dataset.view = v;
+  $$('.seg a, .tabbar a').forEach(a => { if (a.dataset.v === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  const qi = $('#q');
+  if (lastView !== v) { qi.value = UI.q[v]; qi.placeholder = PH[v]; lastView = v; }
+  $('#qclr').hidden = !qi.value;
+  const d = new Date(); $('#today-meta').textContent = `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）${curShift()}`;
+  const r = VIEWS[v]();
+  const fEl = $('#filters');
+  const fActive = document.activeElement && fEl.contains(document.activeElement) && document.activeElement.matches('input,select');
+  CUR = r;
+  if (!fActive || fEl.dataset.v !== v) { fEl.innerHTML = r.filters + r.actions; fEl.dataset.v = v; r.bindFilters && r.bindFilters(fEl); }
+  const y = window.scrollY;
+  $('#main').innerHTML = `<div class="view-title"><h1>${r.title}</h1><span class="meta">${r.meta || ''}</span></div>
+    <div class="layout"><section>${r.main}</section><aside style="display:grid;gap:16px">${r.aside}</aside></div>`;
+  r.bind && r.bind($('#main'));
+  window.scrollTo(0, y);
+}
+$('#q').addEventListener('input', e => { UI.q[currentView()] = e.target.value.trim(); render(); });
+$('#scanq').innerHTML = SCAN_SVG; $('#scanq').onclick = globalScan;
+$('#qclr').onclick = () => { $('#q').value = ''; UI.q[currentView()] = ''; render(); $('#q').focus(); };
+
+/* ===== 1. 生產記錄（依紙本表單 D533 系列數位化） ===== */
+const SH3 = ['夜班','早班','中班'];
+const R = (k, l, u, spec, min, max, pmin, pmax, pspec) => ({ k, l, u, spec, min, max, pmin, pmax, pspec });
+/* D533-PO-001 成型條件：規格上下限（PET／PP 不同的會自動切換） */
+const FORMING_GROUPS = [
+  { t:'壓力', items:[ R('ca','COMPRESSED AIR','Mpa','> 0.55',0.55,null), R('vac','VACUUM','Mpa','< -0.09',null,-0.09),
+    R('uram','U. RAM BALANCER','Mpa','0.45~0.8',0.45,0.8), R('lram','L. RAM BALANCER','Mpa','0.45~0.8',0.45,0.8),
+    R('fpa','FORMING PRESSURE AIR','Mpa','0.1~0.4',0.1,0.4), R('rla','RELEASING AIR','Mpa','0.1~0.3',0.1,0.3), R('cush','AIR CUSHION','Mpa','1.0~2.0',1,2) ]},
+  { t:'模溫', items:[ R('outT','出口溫度','℃','20~60',20,60) ]},
+  { t:'加熱器', items:[ R('upH','上部加熱器','℃','300~400',300,400,400,500,'400~500'), R('loH','下部加熱器','℃','300~400',300,400,400,500,'400~500'),
+    R('skin','上部皮料','℃','100~120',100,120,130,160,'130~160'), R('heatT','加熱時間','sec','4~10',4,10) ]},
+  { t:'成型計時', items:[ R('t1','檯面下降延遲','sec','0~0.80',0,0.8), R('t2','壓空延遲','sec','0~2',0,2), R('t3','壓空','sec','0.5~4',0.5,4),
+    R('t4','排氣','sec','0~1.5',0,1.5), R('t5','檯面上昇延遲','sec','0~0.80',0,0.8), R('t6','冷卻空壓延遲','sec','0~2',0,2),
+    R('t7','冷卻空壓','sec','0~4',0,4), R('t8','打料延遲','sec','0~2',0,2), R('t9','真空延遲','sec','0~2',0,2), R('t10','真空','sec','0.5~4',0.5,4),
+    R('t11','離型1延遲','sec','0~4',0,4), R('t12','離型1','sec','0~2',0,2), R('t13','離型2延遲','sec','0~11',0,11), R('t14','離型2','sec','0~2',0,2) ]}
+];
+/* D533-PO-002 裁切條件 */
+const trimItems = p => [ R(p + 'Cnt','修邊計數設定',''), R(p + 'Spd','高速速度','SPM'), R(p + 'Feed','輸送量','mm'), R(p + 'Adj','補正輸送量','mm'), R(p + 'Fs','輸送速度','%') ];
+const TRIM_GROUPS = [ { t:'PLP 中沖', p:'plp', items: trimItems('plp') }, { t:'PLS 後沖', p:'pls', items: trimItems('pls') } ];
+const specIsPP = mat => String(mat || '').toUpperCase() === 'PP';
+const specRange = (it, mat) => specIsPP(mat) && it.pmin != null ? [it.pmin, it.pmax] : [it.min, it.max];
+const specText = (it, mat) => it.pspec ? (specIsPP(mat) ? 'PP ' + it.pspec : 'PET ' + it.spec) : (it.spec || '');
+const isOOS = (it, v, mat) => { if (!has(v) || v === '') return false; const n = num(v), [a, b] = specRange(it, mat); return (a != null && n < a) || (b != null && n > b); };
+const BASIC = (machineDef) => ({ title:'基本資料', fields:[ ['date','日期','date'], ['shift','班別','select',SH3], ['machine','生產機台','text','list:machine'],
+  ['material','使用原料','select',['PET','PP']], ['part','產品編號','text','list:part'], ['orderNo','訂單號碼','text','list:orderNo'] ] });
+const SIGN = { title:'簽名', fields:[ ['recorder','記錄員','text','list:staffName'], ['supervisor','區域負責人','text','list:staffName'], ['note','備註','textarea'] ] };
+const FORMING_SECTIONS = [
+  { ...BASIC(), fields:[ ...BASIC().fields, ['fileName','檔案品名','text','list:fileName'], ['mold','模具編號','text','list:mold'] ] },
+  ...FORMING_GROUPS.map(g => ({ title: g.t, copy: true, fields: g.items.map(it => [it.k, it.l, 'spec', it]) })), SIGN ];
+const TRIM_SECTIONS = [ BASIC(),
+  ...TRIM_GROUPS.map(g => ({ title: g.t, copy: true, fields: [ [g.p + 'Use', g.t.split(' ')[0] + ' 使用', 'select', ['使用','無']], [g.p + 'File','檔案品名','text','list:fileName'], [g.p + 'Mold','模具編號','text','list:mold'],
+    ...g.items.map(it => [it.k, it.l, 'spec', it]) ] })), SIGN ];
+/* D533-ST-001 膠片上架 */
+const SHEET_SECTIONS = [ { title:'膠片上架', fields:[ ['date','日期','date'], ['time','時間','time'], ['machine','機台','select',['AS-1','SS-1']],
+  ['part','成型品編號','text','list:part'], ['material','材質','select',['PET','PP']], ['thick','厚度','num','mm'], ['thickOK','厚度判定','select',['OK','NG']],
+  ['width','寬度','num','mm'], ['widthOK','寬度判定','select',['OK','NG']], ['batch','BATCH／批次','text','list:batch'], ['rollNo','支號','text'], ['by','上架者','text','list:staffName'] ] } ];
+/* D533-FM-001 生產日報（含成品檢查、金屬檢查） */
+const POS = [ ['pFlc','上料／FLC'], ['pPlp','PLP／PLS'], ['pQc','品檢／包裝機'], ['pBox','包裝區（裝箱）'], ['pBag','包裝區（拉包）'],
+  ['pTwin','上料／雙星'], ['pMid','陸村（中沖）'], ['pRear','陸村（後沖）'], ['pPetG','PET 粉碎機'], ['pPpG','PP 粉碎機'] ];
+const TBL = {
+  sheetT: { rows: 3, cols: [ ['machine','機台','sel',['AS-1','SS-1']], ['part','產品編號','text'], ['material','材質','sel',['PET','PP']], ['color','顏色','text'],
+    ['thick','厚度mm','num'], ['width','寬度mm','num'], ['batch','批號','text'], ['rollNo','支號','text'], ['net','淨重kg','num'], ['remain','餘料kg','num'] ] },
+  outT: { rows: 2, cols: [ ['machine','機台','sel',['AS-1','SS-1']], ['part','產品編號','text'], ['orderNo','訂單號碼','text'], ['packCode','包裝代號','text'],
+    ['boxes','箱數','num'], ['boxFrom','箱號起','text'], ['boxTo','箱號迄','text'], ['net','總淨重kg','num'] ] },
+  scrapT: { rows: 2, cols: [ ['type','類別','sel',['邊框料','NG不良品','邊框料+NG不良品']], ['material','材質','sel',['PET','PP']], ['color','顏色','text'], ['weight','重量kg','num'], ['code','編號','text'] ] },
+  qcT: { rows: 2, cols: [ ['time','檢查時間','time',null,'Thời gian'], ['c1','成型不良','okng',null,'Khuôn kém'], ['c2','刮傷','okng',null,'Trầy xước'], ['c3','毛邊','okng',null,'Cạnh thô'],
+    ['c4','異物','okng',null,'Dị vật'], ['c5','漏水','okng',null,'Rò rỉ nước'], ['c6','晶點','okng',null,'Điểm tinh thể'], ['c7','不斷點','okng',null,'Liên tục'],
+    ['c8','後沖大小邊','okng',null,'Cạnh lớn nhỏ'], ['by','檢查人員','text',null,'Người kiểm tra'] ] },
+  metalT: { fixed: ['開工前','2 小時','用餐前','用餐後','2 小時','收工前'], fixedVn: ['Trước khi bắt đầu','2 giờ','Trước bữa ăn','Sau bữa ăn','2 giờ','Trước khi kết thúc'],
+    cols: [ ['stage','測試頻率','fixed',null,'Tần suất'], ['time','測試時間','time',null,'Thời gian'], ['result','是否正常','okng',null,'Bình thường?'], ['by','測試人員','text',null,'Người kiểm tra'] ] },
+  repairT: { rows: 1, cols: [ ['unit','檢修單位／人員','text'], ['machine','機台／設備','text'], ['from','故障起','time'], ['to','故障迄','time'], ['process','處理經過','text'], ['confirm','確認者','text'] ] }
+};
+const SLOTS = ['08~16','16~24','00~08','08~20','20~08'];
+const REPORT_SECTIONS = [
+  { title:'基本資料', fields:[ ['date','日期','date'], ['team','股別','select',TEAMS], ['slot','時段','select',SLOTS], ['due','應到','num','人'], ['present','實到','num','人'],
+    ['leave','休假','text'], ['overtime','加班','text'], ['support','來支援','text'], ['lend','借調去','text'] ]},
+  { title:'機台負責人員', fields: POS.map(([k, l]) => [k, l, 'text', 'list:staffName']) },
+  { title:'膠片使用', fields:[ ['sheetT','','table'] ]},
+  { title:'產能', fields:[ ['outT','','table'], ['yieldNote','成品率異常說明（低於 68% 必填）','textarea'] ]},
+  { title:'廢料', fields:[ ['scrapT','','table'] ]},
+  { title:'成品檢查記錄（每班抽檢 2 次）・Kiểm tra thành phẩm', fields:[ ['qcT','','table'] ]},
+  { title:'金屬檢查機測試・Kiểm tra máy kim loại', fields:[ ['metalT','','table'] ]},
+  { title:'檢修記錄', fields:[ ['repairT','','table'] ]},
+  { title:'交接與簽名', fields:[ ['handover','其它交接事項','textarea'], ['leader','股長','text','list:staffName'], ['chief','班長','text','list:staffName'] ]}
+];
+const FORMS = {
+  report: { name:'生產日報', code:'D533-FM-001', coll:'reports', sections: REPORT_SECTIONS, mem: ['team','slot','leader','chief', ...POS.map(p => p[0])] },
+  forming: { name:'成型條件', code:'D533-PO-001', coll:'forming', sections: FORMING_SECTIONS, groups: FORMING_GROUPS, mem: ['machine','material','part','fileName','mold','orderNo','recorder','supervisor'] },
+  trim: { name:'裁切條件', code:'D533-PO-002', coll:'trimming', sections: TRIM_SECTIONS, groups: TRIM_GROUPS, mem: ['machine','material','part','orderNo','recorder','supervisor','plpUse','plpFile','plpMold','plsUse','plsFile','plsMold'] },
+  sheet: { name:'膠片上架', code:'D533-ST-001', coll:'sheets', sections: SHEET_SECTIONS, mem: ['machine','part','material','thick','width','batch','by'] }
+};
+
+/* ---------- 表格型欄位（可新增／刪除列） ---------- */
+function tblRowHTML(key, r, i) {
+  const T = TBL[key];
+  return `<tr>${T.cols.map(([k, , t, o]) => { const v = r[k] ?? '';
+    if (t === 'fixed') return `<td class="fx">${esc(v)}${T.fixedVn ? `<small>${esc(T.fixedVn[i] || '')}</small>` : ''}<input type="hidden" data-c="${k}" value="${esc(v)}"></td>`;
+    if (t === 'sel') return `<td><select class="ctl" data-c="${k}">${['', ...o].map(x => `<option value="${esc(x)}"${x === v ? ' selected' : ''}>${esc(x) || '—'}</option>`).join('')}</select></td>`;
+    if (t === 'okng') return `<td><select class="ctl okng" data-c="${k}" data-v="${esc(v)}">${['','OK','NG'].map(x => `<option value="${x}"${x === v ? ' selected' : ''}>${x || '—'}</option>`).join('')}</select></td>`;
+    if (t === 'time') return `<td><input class="ctl" type="time" data-c="${k}" value="${esc(v)}"></td>`;
+    return `<td><input class="ctl" data-c="${k}" autocomplete="off" ${t === 'num' ? 'inputmode="decimal"' : ''} ${k === 'orderNo' ? 'list="dl_tord"' : k === 'batch' ? 'list="dl_tbatch"' : ''} value="${esc(v)}"></td>`;
+  }).join('')}${T.fixed ? '' : '<td><button type="button" class="rowdel" data-delrow aria-label="刪除這列">✕</button></td>'}</tr>`;
+}
+function tblBody(key, rows) {
+  const T = TBL[key];
+  const data = T.fixed ? T.fixed.map((x, i) => ({ ...((rows && rows[i]) || {}), [T.cols[0][0]]: x }))
+    : (Array.isArray(rows) && rows.length ? rows : Array.from({ length: T.rows || 1 }, () => ({})));
+  return data.map((r, i) => tblRowHTML(key, r, i)).join('');
+}
+function tblHTML(key, rows, sug) {
+  const T = TBL[key];
+  return `<div class="tw" data-table="${key}"><table class="et"><thead><tr>${T.cols.map(c => `<th>${c[1]}${c[4] ? `<small>${c[4]}</small>` : ''}</th>`).join('')}${T.fixed ? '' : '<th></th>'}</tr></thead>
+    <tbody>${tblBody(key, rows)}</tbody></table></div>${T.fixed ? '' : `<button type="button" class="btn sm" data-addrow="${key}">＋ 新增一列</button>`}
+    ${key === 'outT' ? `<datalist id="dl_tord">${(sug.orderNo || []).map(o => `<option value="${esc(o)}">`).join('')}</datalist>` : ''}
+    ${key === 'sheetT' ? `<datalist id="dl_tbatch">${(sug.batch || []).map(o => `<option value="${esc(o)}">`).join('')}</datalist>` : ''}`;
+}
+function readTable(root, key) {
+  const T = TBL[key];
+  return [...root.querySelectorAll(`[data-table="${key}"] tbody tr`)].map(tr => {
+    const o = {};
+    tr.querySelectorAll('[data-c]').forEach(el => { const c = T.cols.find(x => x[0] === el.dataset.c), raw = el.value.trim(); o[el.dataset.c] = c && c[2] === 'num' ? (raw === '' ? '' : num(raw)) : raw; });
+    return o;
+  }).filter(o => T.fixed || T.cols.some(([k, , t]) => t !== 'fixed' && has(o[k]) && o[k] !== ''));
+}
+dlg.addEventListener('click', e => {
+  const a = e.target.closest('[data-addrow]');
+  if (a) { const k = a.dataset.addrow, tb = dlg.querySelector(`[data-table="${k}"] tbody`); tb.insertAdjacentHTML('beforeend', tblRowHTML(k, {}, tb.children.length)); tb.lastElementChild.querySelector('.ctl')?.focus(); dlg.dispatchEvent(new Event('input')); return; }
+  const d = e.target.closest('[data-delrow]');
+  if (d) { d.closest('tr').remove(); dlg.dispatchEvent(new Event('input')); }
+});
+dlg.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('okng')) e.target.dataset.v = e.target.value; });
+
+/* ---------- 共用計算 ---------- */
+const sum = (arr, k) => (arr || []).reduce((t, r) => t + num(r[k]), 0);
+const hm = s => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ''); return m ? +m[1] * 60 + +m[2] : null; };
+const downMins = rows => (rows || []).reduce((t, r) => { const a = hm(r.from), b = hm(r.to); return a == null || b == null ? t : t + ((b - a + 1440) % 1440); }, 0);
+function reportSummary(x) {
+  const used = sum(x.sheetT, 'net') - sum(x.sheetT, 'remain'), outNet = sum(x.outT, 'net');
+  return { used, outNet, boxes: sum(x.outT, 'boxes'), yield: used > 0 ? outNet / used * 100 : null, scrap: sum(x.scrapT, 'weight'), down: downMins(x.repairT),
+    qcNG: (x.qcT || []).reduce((t, r) => t + Object.keys(r).filter(k => /^c\d$/.test(k) && r[k] === 'NG').length, 0),
+    metalNG: (x.metalT || []).filter(r => r.result === 'NG').length };
+}
+const yieldTag = y => y == null ? '' : `<span class="tag ${y < 68 ? 'bad' : 'ok'}">成品率 ${y.toFixed(1)}%</span>`;
+function oosList(F, x) {
+  const FD = FORMS[F]; if (!FD.groups) return [];
+  return FD.groups.flatMap(g => g.items).filter(it => isOOS(it, x[it.k], x.material));
+}
+
+/* ---------- 列表畫面 ---------- */
+function viewRecords() {
+  const F = FORMS[UI.form] ? UI.form : 'report', FD = FORMS[F], q = UI.q.records;
+  const all = list(FD.coll);
+  const recs = all.filter(x => q ? JSON.stringify(x).toLowerCase().includes(q.toLowerCase()) : x.date === UI.recDate).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  let main = '', stats = '';
+  const empty = `<div class="empty glass">${q ? '找不到符合的記錄，換個關鍵字試試。' : `這一天還沒有「${FD.name}」記錄。`}<br><button class="btn pri" data-new="${F}">＋ 新增${FD.name}</button></div>`;
+  if (F === 'forming' || F === 'trim') {
+    const groups = {};
+    recs.forEach(x => { const k = [x.date, x.machine, x.part].join('|'); (groups[k] = groups[k] || []).push(x); });
+    const keys = Object.keys(groups).sort().reverse();
+    main = keys.length ? keys.map(k => condCardHTML(F, groups[k])).join('') : empty;
+    const oos = recs.reduce((t, x) => t + oosList(F, x).length, 0);
+    stats = statHTML('記錄筆數', recs.length, 'c-blue') + statHTML('產品數', uniq(recs.map(x => x.part)).length, 'c-purple') +
+      (F === 'forming' ? statHTML('超出規格', oos + ' 項', oos ? 'c-red alert' : 'c-green') : statHTML('機台', uniq(recs.map(x => x.machine)).length, 'c-teal')) +
+      statHTML('記錄班別', uniq(recs.map(x => x.shift)).length + ' / 3', 'c-orange');
+  } else if (F === 'sheet') {
+    const ng = recs.filter(x => x.thickOK === 'NG' || x.widthOK === 'NG').length;
+    main = recs.length ? `<div class="tbl-wrap glass"><table class="tbl"><thead><tr><th class="sticky">日期／時間</th><th>機台</th><th>成型品編號</th><th>材質</th><th style="text-align:right">厚度</th><th style="text-align:right">寬度</th><th>批次</th><th>支號</th><th>上架者</th></tr></thead><tbody>
+      ${recs.map(x => `<tr data-id="${x.id}" style="cursor:pointer"><td class="sticky"><b>${md(x.date)}</b> ${esc(x.time || '')}</td><td>${esc(x.machine || '')}</td><td>${esc(x.part || '')}</td><td>${esc(x.material || '')}</td>
+        <td class="n">${has(x.thick) ? esc(x.thick) : '—'} <span class="tag ${x.thickOK === 'NG' ? 'bad' : 'ok'}">${esc(x.thickOK || 'OK')}</span></td><td class="n">${has(x.width) ? esc(x.width) : '—'} <span class="tag ${x.widthOK === 'NG' ? 'bad' : 'ok'}">${esc(x.widthOK || 'OK')}</span></td>
+        <td>${esc(x.batch || '')}</td><td>${esc(x.rollNo || '')}</td><td>${esc(x.by || '')}</td></tr>`).join('')}</tbody></table></div>` : empty;
+    stats = statHTML('上架支數', recs.length, 'c-blue') + statHTML('NG', ng, ng ? 'c-red alert' : 'c-green') + statHTML('批次數', uniq(recs.map(x => x.batch)).length, 'c-purple') + statHTML('產品數', uniq(recs.map(x => x.part)).length, 'c-teal');
+  } else {
+    const sm = recs.map(reportSummary);
+    const used = sm.reduce((t, s) => t + s.used, 0), outNet = sm.reduce((t, s) => t + s.outNet, 0), y = used > 0 ? outNet / used * 100 : null;
+    main = recs.length ? `<div class="list">${recs.map((x, i) => { const s = sm[i]; return `<button class="card glass" data-id="${x.id}">
+        <span class="badge">${esc((x.team || '—').replace('股', ''))}</span>
+        <span><span class="t">${q ? md(x.date) + ' ' : ''}${esc(x.team || '')} ${esc(x.slot || '')}</span> ${yieldTag(s.yield)}${s.metalNG || s.qcNG ? ' <span class="tag bad">檢查 NG</span>' : ''}<br>
+          <span class="s">實到 ${fmt(x.present, 0)}／應到 ${fmt(x.due, 1)} 人・${fmt(s.boxes, 0)} 箱・廢料 ${fmt(s.scrap, 1)} kg${s.down ? '・故障 ' + s.down + ' 分' : ''}${x.chief ? '・班長 ' + esc(x.chief) : ''}</span></span>
+        <span class="s hide-m">膠片使用 ${fmt(s.used, 1)} kg<br>${(x.outT || []).map(r => esc(r.part)).filter(Boolean).join('、')}</span>
+        <span class="r"><b>${fmt(s.outNet, 1)}</b><small>kg 產出</small></span></button>`; }).join('')}</div>` : empty;
+    stats = statHTML('產出箱數', fmt(sm.reduce((t, s) => t + s.boxes, 0), 0), 'c-blue') + statHTML('成品率', y == null ? '—' : y.toFixed(1) + '%', y != null && y < 68 ? 'c-red alert' : 'c-green') +
+      statHTML('廢料', fmt(sm.reduce((t, s) => t + s.scrap, 0), 1) + ' kg', 'c-orange') + statHTML('故障時間', sm.reduce((t, s) => t + s.down, 0) + ' 分', 'c-pink');
+  }
+  const sug = suggestions();
+  return {
+    title: FD.name,
+    meta: `${FD.code}・${q ? `搜尋「${esc(q)}」共 <b>${recs.length}</b> 筆` : `${md(UI.recDate)} 共 <b>${recs.length}</b> 筆`}`,
+    filters: Object.keys(FORMS).map(k => `<button class="chip" data-form="${k}" aria-pressed="${k === F}">${FORMS[k].name}</button>`).join('') +
+      `<input class="ctl" type="date" id="fd" value="${UI.recDate}" aria-label="日期"><button class="btn" id="tdy">今天</button>`,
+    actions: `<button class="btn" id="exp">匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
+    bindFilters: f => {
+      $$('[data-form]', f).forEach(b => b.onclick = () => { UI.form = b.dataset.form; mem.set('form', UI.form); $$('[data-form]', f).forEach(x => x.setAttribute('aria-pressed', x === b)); render(); });
+      $('#fd', f).onchange = e => { UI.recDate = e.target.value || today(); render(); };
+      $('#tdy', f).onclick = () => { UI.recDate = today(); render(); };
+      $('#add', f).onclick = () => editForm(UI.form in FORMS ? UI.form : 'report');
+      $('#exp', f).onclick = () => CUR.exp();
+    },
+    exp: () => exportForm(F, recs),
+    main, aside: `<div class="stats">${stats}</div>`,
+    bind: m => {
+      $$('[data-new]', m).forEach(b => b.onclick = () => { const [f, date, machine, part, shift] = b.dataset.new.split('|'); editForm(f, null, date ? { date, machine, part, shift } : null); });
+      $$('[data-edit]', m).forEach(b => b.onclick = () => editForm(F, b.dataset.edit));
+      $$('.card[data-id], tr[data-id]', m).forEach(b => b.onclick = () => editForm(F, b.dataset.id));
+    }
+  };
+}
+function condCardHTML(F, recs) {
+  const FD = FORMS[F], x0 = recs[0], by = {};
+  recs.forEach(r => { if (!by[r.shift] || (r.ts || 0) > (by[r.shift].ts || 0)) by[r.shift] = r; });
+  const anyRec = SH3.map(s => by[s]).find(Boolean) || x0, mat = anyRec.material;
+  const oosN = SH3.reduce((t, s) => t + (by[s] ? oosList(F, by[s]).length : 0), 0);
+  const head = `<tr><th>項目</th><th>規格</th>${SH3.map(s => by[s] ? `<th><button class="shbtn" data-edit="${by[s].id}">${s}<small>${esc(by[s].recorder || '')}</small></button></th>`
+    : `<th><button class="shbtn add" data-new="${F}|${esc(x0.date)}|${esc(x0.machine || '')}|${esc(x0.part || '')}|${s}">＋ ${s}</button></th>`).join('')}</tr>`;
+  const cell = (k, it) => SH3.map(s => { const r = by[s], v = r ? r[k] : ''; const bad = r && it && isOOS(it, v, r.material);
+    return `<td class="v ${bad ? 'bad' : ''}">${has(v) && v !== '' ? esc(v) : ''}</td>`; }).join('');
+  const rows = FD.groups.map(g => {
+    const pre = F === 'trim' ? [[g.p + 'Use', '使用'], [g.p + 'File', '檔案品名'], [g.p + 'Mold', '模具編號']].map(([k, l]) => `<tr><td>${l}</td><td class="sp"></td>${cell(k)}</tr>`).join('') : '';
+    return `<tr class="gh"><td colspan="5">${g.t}</td></tr>${pre}${g.items.map(it => `<tr><td>${esc(it.l)}${it.u ? ` <span class="sp">${esc(it.u)}</span>` : ''}</td><td class="sp">${esc(specText(it, mat) || '—')}</td>${cell(it.k, it)}</tr>`).join('')}`;
+  }).join('');
+  return `<div class="panel glass" style="margin-bottom:12px"><div class="ch"><span class="badge2">${esc(mat || '')}</span><div style="flex:1;min-width:0"><b style="font-size:17px">${esc(x0.part || '未填產品')}</b>
+      <div class="s" style="font-size:13px;color:var(--muted)">${md(x0.date)}・${esc(x0.machine || '')}${anyRec.fileName ? '・檔案 ' + esc(anyRec.fileName) : ''}${anyRec.mold ? '・模具 ' + esc(anyRec.mold) : ''}${anyRec.orderNo ? '・訂單 ' + esc(anyRec.orderNo) : ''}</div></div>
+      ${F === 'forming' ? `<span class="tag ${oosN ? 'bad' : 'ok'}">${oosN ? '超規 ' + oosN + ' 項' : '全部符合規格'}</span>` : ''}</div>
+    <div class="tbl-wrap"><table class="ct"><thead>${head}</thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function exportForm(F, recs) {
+  const FD = FORMS[F];
+  if (F === 'report') {
+    const H = ['日期','股別','時段','應到','實到','休假','加班','來支援','借調去', ...POS.map(p => p[1]), '膠片使用kg','產出箱數','產出總淨重kg','成品率%','成品率異常說明','廢料kg','故障分鐘','成品檢查NG數','金屬檢查NG數','產出明細','交接事項','股長','班長'];
+    return exportCSV(`生產日報_${UI.q.records ? '搜尋' : UI.recDate}.csv`, H, recs.map(x => { const s = reportSummary(x);
+      return [x.date, x.team, x.slot, x.due, x.present, x.leave, x.overtime, x.support, x.lend, ...POS.map(p => x[p[0]]), s.used.toFixed(1), s.boxes, s.outNet.toFixed(1), s.yield == null ? '' : s.yield.toFixed(1), x.yieldNote,
+        s.scrap.toFixed(1), s.down, s.qcNG, s.metalNG, (x.outT || []).map(r => `${r.part || ''}${r.orderNo ? '(' + r.orderNo + ')' : ''} ${r.boxes || 0}箱 ${r.net || 0}kg`).join('；'), x.handover, x.leader, x.chief]; }));
+  }
+  const fs = FD.sections.flatMap(s => s.fields).filter(f => f[2] !== 'table');
+  const H = fs.map(f => f[2] === 'spec' ? f[3].l + (f[3].u ? `(${f[3].u})` : '') : f[1]);
+  if (F === 'forming') H.push('超出規格項目');
+  exportCSV(`${FD.name}_${UI.q.records ? '搜尋' : UI.recDate}.csv`, H, recs.map(x => { const row = fs.map(f => x[f[0]]); if (F === 'forming') row.push(oosList(F, x).map(it => it.l).join('、')); return row; }));
+}
+
+/* ---------- 新增／編輯 ---------- */
+function slotNow() { const h = new Date().getHours(); return h < 8 ? '00~08' : h < 16 ? '08~16' : '16~24'; }
+function hhmm() { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function condCalc(F, d) {
+  const FD = FORMS[F], mat = $('[name="material"]', d)?.value, items = FD.groups.flatMap(g => g.items);
+  let bad = [];
+  items.forEach(it => {
+    const el = $(`[name="${it.k}"]`, d); if (!el) return;
+    const o = isOOS(it, el.value.trim(), mat); el.closest('.uw')?.classList.toggle('oos', o); if (o) bad.push(it.l);
+    const sp = $(`[data-spec-of="${it.k}"]`, d); if (sp && it.spec) sp.textContent = '規格 ' + specText(it, mat);
+  });
+  const m = $('[name="machine"]', d)?.value.trim(), p = $('[name="part"]', d)?.value.trim(), id = d.dataset.editing;
+  const prev = list(FD.coll).filter(x => x.id !== id && x.machine === m && x.part === p).sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
+  const changed = prev ? items.filter(it => { const v = $(`[name="${it.k}"]`, d)?.value.trim(); return v !== '' && has(prev[it.k]) && String(prev[it.k]) !== '' && num(v) !== num(prev[it.k]); })
+    .map(it => `${it.l} ${prev[it.k]} → ${$(`[name="${it.k}"]`, d).value.trim()}`) : [];
+  $('#calc', d).innerHTML = `<h4>條件檢查</h4>
+    ${F === 'forming' ? `<p style="margin:4px 0">${bad.length ? `<span class="tag bad">超出規格 ${bad.length} 項</span> ${bad.map(esc).join('、')}` : '<span class="tag ok">目前填寫的數值都在規格內</span>'}</p>` : ''}
+    <p style="margin:4px 0;font-size:14px">${prev ? (changed.length ? `與上次（${md(prev.date)} ${esc(prev.shift || '')}）相比變更 ${changed.length} 項：${changed.map(esc).join('、')}` : `與上次（${md(prev.date)} ${esc(prev.shift || '')}）條件相同`) : '這個產品在此機台還沒有前次記錄'}</p>`;
+}
+function reportCalc(d) {
+  const x = { sheetT: readTable(d, 'sheetT'), outT: readTable(d, 'outT'), scrapT: readTable(d, 'scrapT'), repairT: readTable(d, 'repairT'), qcT: readTable(d, 'qcT'), metalT: readTable(d, 'metalT') };
+  const s = reportSummary(x);
+  $('#calc', d).innerHTML = `<h4>即時計算</h4>${formulaTable([
+    ['膠片使用量', '淨重 − 餘料', fmt(s.used, 1) + ' kg'], ['產出箱數', '箱數加總', fmt(s.boxes, 0) + ' 箱'], ['產出總淨重', '總淨重加總', fmt(s.outNet, 1) + ' kg'],
+    ['成品率', '總淨重 ÷ 膠片使用量', s.yield == null ? '—' : `<span style="color:${s.yield < 68 ? 'var(--red)' : 'var(--green)'}">${s.yield.toFixed(1)}%${s.yield < 68 ? '（需異常說明）' : ''}</span>`],
+    ['廢料', '重量加總', fmt(s.scrap, 1) + ' kg'], ['故障時間', '迄 − 起', s.down ? s.down + ' 分鐘' : '—'],
+    ['檢查 NG', '成品＋金屬', s.qcNG + s.metalNG ? `<span style="color:var(--red)">${s.qcNG + s.metalNG} 項</span>` : '0']])}`;
+}
+function rosterFill(d) {
+  const g = k => $(`[name="${k}"]`, d), date = g('date').value || today(), team = g('team').value, slot = g('slot').value;
+  const dt = parseD(date);
+  const codeAt = (p, off) => { const x = addDays(dt, off), r = S.data.roster.get(ymd(mondayOf(x)) + '_' + p.id); return r && r.days ? r.days[(x.getDay() + 6) % 7] || '' : ''; };
+  const rule = { '08~16': [[0, ['早','日12']]], '16~24': [[0, ['中','日12','夜12']]], '00~08': [[0, ['夜']], [-1, ['夜12']]], '08~20': [[0, ['日12','早']]], '20~08': [[0, ['夜12']]] }[slot] || [];
+  const staff = list('staff').filter(p => !team || p.team === team);
+  const work = staff.filter(p => rule.some(([off, codes]) => codes.includes(codeAt(p, off))));
+  const lv = staff.filter(p => !work.includes(p) && LEAVES.includes(codeAt(p, 0)));
+  if (!work.length && !lv.length) { toast('排班表找不到這個股別、時段的人員，請確認排班'); return; }
+  g('present').value = work.length; g('due').value = work.length + lv.length;
+  g('leave').value = lv.map(p => `${p.name}（${codeAt(p, 0)}）`).join('、');
+  toast(`已從排班帶入：實到 ${work.length} 人${lv.length ? '、休假 ' + lv.length + ' 人' : ''}`);
+}
+function editForm(F, id, prefill) {
+  const FD = FORMS[F], old = id ? S.data[FD.coll].get(id) : null;
+  const remembered = mem.get('last_' + F, {});
+  const defs = { report: { team: TEAMS[0], slot: slotNow() }, forming: { machine: 'ASANO_FLC', material: 'PET' }, trim: { machine: 'ASANO_PLP & PLS', material: 'PET', plpUse: '使用', plsUse: '使用' },
+                 sheet: { machine: 'AS-1', material: 'PET', thickOK: 'OK', widthOK: 'OK' } }[F];
+  const v = old ? { ...old } : { ...defs, ...remembered, date: UI.recDate, shift: curShift(), slot: slotNow(), time: hhmm(), ...(prefill || {}) };
+  if (!old && F === 'sheet') { v.thickOK = 'OK'; v.widthOK = 'OK'; }
+  const quick = {};
+  if (!old) FD.sections.forEach(s => s.fields.forEach(([k, , t]) => { if (t === 'spec') quick[k] = recentVals(FD.coll, k, 2); else if (['batch','rollNo','fileName','mold','part'].includes(k)) quick[k] = recentVals(FD.coll, k, 3); }));
+  const hasCalc = F !== 'sheet';
+  dlg.dataset.editing = id || '';
+  openSheet({
+    title: (old ? '編輯' : '新增') + FD.name + `<small style="font-size:12px;color:var(--muted);font-weight:500;margin-left:8px">${FD.code}</small>`,
+    body: formHTML(FD.sections, v, quick) + (hasCalc ? '<div class="calc" id="calc"></div>' : '') +
+      (F === 'forming' || F === 'trim' ? '<p class="hint">藍色小按鈕是最近填過的數值。填好機台與產品編號後，按右上「帶入上次條件」可一次帶入整組條件，只改有變動的欄位。超出規格的欄位會變紅色。</p>'
+       : F === 'report' ? '<p class="hint">按右上「從排班帶入」會依股別、時段自動算出應到、實到與休假人員。產能列填上訂單號碼，箱數會自動計入訂單進度與交期預估。</p>' : ''),
+    draftKey: old ? null : 'form_' + F, sections: FD.sections,
+    onInput: d => { if (F === 'forming' || F === 'trim') condCalc(F, d); else if (F === 'report') reportCalc(d); },
+    extraBtn: F === 'report' ? { label: '從排班帶入', onClick: rosterFill }
+      : F === 'sheet' ? null : { label: '帶入上次條件', onClick: d => {
+        const m = $('[name="machine"]', d).value.trim(), p = $('[name="part"]', d).value.trim();
+        if (!p) { toast('請先填產品編號'); return; }
+        const prev = list(FD.coll).filter(x => x.id !== id && x.part === p && (!m || x.machine === m)).sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
+        if (!prev) { toast(`找不到 ${p} 的歷史條件`); return; }
+        FD.sections.filter(s => s.copy).forEach(s => s.fields.forEach(([k]) => { const el = $(`[name="${k}"]`, d); if (el && has(prev[k])) el.value = prev[k]; }));
+        ['fileName','mold','material','orderNo'].forEach(k => { const el = $(`[name="${k}"]`, d); if (el && !el.value && has(prev[k])) el.value = prev[k]; });
+        toast(`已帶入 ${md(prev.date)} ${prev.shift || ''} 的條件`);
+      } },
+    onScan: (key, val, d) => { const o = findOrder(val); if (o) { const el = $('[name="orderNo"]', d); if (el) el.value = o.orderNo; if (key !== 'orderNo') $(`[name="${key}"]`, d).value = ''; const pt = $('[name="part"]', d); if (pt && !pt.value) pt.value = o.part || ''; toast(`訂單 ${o.orderNo}：已帶入產品編號`); } },
+    onSave: async d => {
+      const data = readForm(d, FD.sections);
+      if (F !== 'report' && !data.part) { toast('請填寫產品編號'); return false; }
+      if (F === 'report') {
+        const s = reportSummary(data);
+        if (s.yield != null && s.yield < 68 && !String(data.yieldNote || '').trim()) { toast('成品率低於 68%，請填寫異常說明'); $('[name="yieldNote"]', d)?.focus(); return false; }
+        Object.assign(data, { sumUsed: +s.used.toFixed(2), sumOutNet: +s.outNet.toFixed(2), sumBoxes: s.boxes, sumYield: s.yield == null ? '' : +s.yield.toFixed(2), sumScrap: +s.scrap.toFixed(2), sumDown: s.down });
+      }
+      if (!data.date) data.date = today();
+      data.ts = old ? (old.ts || Date.now()) : Date.now(); data.updated = Date.now();
+      await save(FD.coll, id || uid(), data);
+      const keep = {}; FD.mem.forEach(k => { if (has(data[k]) && data[k] !== '') keep[k] = data[k]; }); mem.set('last_' + F, keep);
+      UI.recDate = data.date;
+      const bad = F === 'forming' ? oosList(F, data).length : 0;
+      toast(bad ? `已儲存，注意有 ${bad} 項超出規格` : `已儲存${FD.name}`);
+    },
+    onDelete: old ? () => removeDoc(FD.coll, id) : null
+  });
+  if (!old && prefill) { fillForm(dlg, prefill); if (hasCalc) dlg.dispatchEvent(new Event('input')); }   // 點「＋中班」等按鈕時，班別／產品不被舊草稿蓋掉
+}
+
+/* ===== 2. 人員排班 ===== */
+const SHIFT_CYCLE = ['', '早', '中', '夜', '休'];          // 一般人員：8 小時三班
+const SHIFT_CYCLE_12 = ['', '日12', '夜12', '休'];         // 移工：12 小時兩班
+const WORK_SHIFTS = ['早', '中', '夜', '日12', '夜12'];
+const shiftHours = v => (v === '日12' || v === '夜12') ? 12 : WORK_SHIFTS.includes(v) ? 8 : 0;
+const is12 = p => !!p && (String(p.shiftType || '').startsWith('12') || p.role === '移工');
+const cycleFor = p => is12(p) ? SHIFT_CYCLE_12 : SHIFT_CYCLE;
+const normShift = v => !v ? '' : /移工|12|外籍/.test(v) ? '12小時兩班（移工）' : '8小時三班';
+
+/* 班別依組別歸類：點格子後從分組中選擇 */
+const LEAVES = ['休', '特休', '病假', '事假', '公假'];
+const SHIFT_TIME = { 早:'08–16', 中:'16–24', 夜:'00–08', 日12:'08–20', 夜12:'20–08' };
+const SHIFT_GROUPS = [
+  { key:'8', title:'8 小時三班', items:['早','中','夜'] },
+  { key:'12', title:'12 小時兩班（移工）', items:['日12','夜12'] },
+  { key:'off', title:'休假／請假', items:LEAVES }
+];
+function pickShift(sid, i) {
+  const p = S.data.staff.get(sid) || {}, docId = UI.week + '_' + sid, day = addDays(parseD(UI.week), i);
+  const r = S.data.roster.get(docId) || {}, arr = [...(r.days || ['','','','','','',''])], cur = arr[i] || '';
+  const mine = is12(p) ? '12' : '8';
+  const groups = [...SHIFT_GROUPS].sort((a, b) => (b.key === mine) - (a.key === mine));   // 本人班制排最前面
+  openSheet({
+    title: '選擇班別',
+    body: `<div class="pick-head"><b>${esc(p.name || '')}</b><span class="s" style="color:var(--muted)">${day.getMonth() + 1}/${day.getDate()}（週${WD[day.getDay()]}）${p.team ? '・' + esc(p.team) : ''}</span>${is12(p) ? '<span class="tag ok">12h 班制</span>' : ''}</div>
+      ${groups.map(g => `<div class="pick-group"><h4>${g.title}${g.key === mine ? ' <span class="tag blue">本人班制</span>' : ''}</h4><div class="pick-grid">
+        ${g.items.map(v => `<button type="button" class="cell ${v === cur ? 'cur' : ''}" data-pick="${v}" data-v="${v}">${v}${SHIFT_TIME[v] ? `<small>${SHIFT_TIME[v]}</small>` : ''}</button>`).join('')}</div></div>`).join('')}
+      <div class="pick-foot"><label><input type="checkbox" id="pkall">套用到這週每一天</label><button type="button" class="btn" data-pick="">清除這格</button></div>`
+  });
+  $$('[data-pick]', dlg).forEach(b => b.onclick = async () => {
+    const v = b.dataset.pick, all = $('#pkall', dlg).checked;
+    const days = all ? arr.map(() => v) : arr.map((x, k) => k === i ? v : x);
+    dlg.close();
+    try { await save('roster', docId, { week: UI.week, staffId: sid, days }); } catch (e) { render(); }
+  });
+}
+function viewRoster() {
+  const q = UI.q.roster;
+  const everyone = list('staff').sort((a, b) => teamSort(a.team, b.team) || String(a.empNo || a.name).localeCompare(String(b.empNo || b.name), 'zh-Hant'));
+  const teams = uniq(everyone.map(p => p.team)).sort(teamSort); const hasNoTeam = everyone.some(p => !p.team);
+  if (UI.team !== '全部' && !teams.includes(UI.team) && !(UI.team === '未分股' && hasNoTeam)) UI.team = '全部';
+  const allStaff = everyone.filter(p => UI.team === '全部' || (UI.team === '未分股' ? !p.team : p.team === UI.team));   // 目前選的股別
+  const staff = allStaff.filter(p => matchQ(p, q));
+  const wk = parseD(UI.week), days = [...Array(7)].map((_, i) => addDays(wk, i)), td = today();
+  const rmap = {}; list('roster').filter(r => r.week === UI.week).forEach(r => rmap[r.staffId] = r);
+  const dayVal = (p, i) => rmap[p.id] && rmap[p.id].days ? rmap[p.id].days[i] || '' : '';
+  let shifts = 0, off = 0, hours = 0; allStaff.forEach(p => days.forEach((_, i) => { const v = dayVal(p, i); if (WORK_SHIFTS.includes(v)) { shifts++; hours += shiftHours(v); } if (LEAVES.includes(v)) off++; }));
+  const hasMig = allStaff.some(is12);
+  const ti = days.findIndex(d => ymd(d) === td);
+  const todayCnt = ti >= 0 ? allStaff.filter(p => WORK_SHIFTS.includes(dayVal(p, ti))).length : null;
+  return {
+    title: '人員排班表',
+    meta: `${days[0].getMonth() + 1}/${days[0].getDate()} – ${days[6].getMonth() + 1}/${days[6].getDate()}`,
+    filters: `<div class="weeknav"><button class="btn" id="pw" aria-label="上一週">‹</button><button class="btn" id="tw">本週</button><button class="btn" id="nw" aria-label="下一週">›</button></div>
+      ${teams.length ? `<select class="ctl" id="fteam" aria-label="股別">${['全部', ...teams, ...(hasNoTeam ? ['未分股'] : [])].map(t => `<option value="${esc(t)}"${t === UI.team ? ' selected' : ''}>${t === '全部' ? '全部股別' : esc(t)}</option>`).join('')}</select>` : ''}`,
+    actions: `<button class="btn" id="copy">複製上週</button><button class="btn" id="exp">匯出</button><button class="btn pri" id="mg">人員</button>`,
+    bindFilters: f => {
+      const sw = n => { UI.week = ymd(addDays(parseD(UI.week), n)); render(); };
+      const ft = $('#fteam', f); if (ft) ft.onchange = e => { UI.team = e.target.value; render(); };
+      $('#pw', f).onclick = () => sw(-7); $('#nw', f).onclick = () => sw(7);
+      $('#tw', f).onclick = () => { UI.week = ymd(mondayOf(new Date())); render(); };
+      $('#mg', f).onclick = manageStaff;
+      $('#copy', f).onclick = async () => {
+        const prev = ymd(addDays(parseD(UI.week), -7)); const src = list('roster').filter(r => r.week === prev);
+        if (!src.length) { toast('上週沒有班表可以複製'); return; }
+        let n = 0; for (const r of src) { const id = UI.week + '_' + r.staffId; if (S.data.roster.has(id)) continue; await save('roster', id, { week: UI.week, staffId: r.staffId, days: r.days }); n++; }
+        toast(n ? `已複製 ${n} 位人員（已排的不覆蓋）` : '本週每個人都排過了');
+      };
+      $('#exp', f).onclick = () => CUR.exp();
+    },
+    exp: () => { const wkd = [...Array(7)].map((_, i) => addDays(parseD(UI.week), i));
+        exportCSV(`人員排班_${UI.week}${UI.team !== '全部' ? '_' + UI.team : ''}.csv`, ['股別','工號','姓名','職稱', ...wkd.map(d => `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`)], allStaff.map(p => [p.team, p.empNo, p.name, p.role, ...wkd.map((_, i) => dayVal(p, i))])); },
+    main: allStaff.length ? `<div class="tbl-wrap glass"><table class="tbl roster"><thead><tr><th class="sticky">人員</th>${days.map(d => `<th class="${ymd(d) === td ? 'today' : ''}">週${WD[d.getDay()]}<b>${d.getMonth() + 1}/${d.getDate()}</b></th>`).join('')}</tr></thead>
+      <tbody>${staff.map(p => `<tr><th class="sticky">${esc(p.name)}${is12(p) ? ' <span class="tag ok">12h</span>' : ''}<small>${[p.team, p.role, p.empNo].filter(Boolean).map(esc).join('・')}</small></th>${days.map((d, i) => { const val = dayVal(p, i); return `<td><button class="cell" data-s="${p.id}" data-i="${i}" data-v="${val}" aria-label="${esc(p.name)} 週${WD[d.getDay()]}：${val || '未排'}">${val || '＋'}</button></td>`; }).join('')}</tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">找不到符合的人員</td></tr>`}</tbody>
+      <tfoot><tr><td class="sticky" style="font-size:12px;color:var(--muted)">出勤</td>${days.map((d, i) => { const c = { 早:0, 中:0, 夜:0, 日12:0, 夜12:0 }; allStaff.forEach(p => { const v = dayVal(p, i); if (c[v] !== undefined) c[v]++; }); return `<td style="font-size:12px;color:var(--muted);line-height:1.4">早${c.早} 中${c.中}<br>夜${c.夜}${hasMig ? `<br>日12：${c.日12}<br>夜12：${c.夜12}` : ''}</td>`; }).join('')}</tr></tfoot></table></div>
+      <div class="legend"><span>點格子選擇班別：</span><span><i style="background:linear-gradient(140deg,#FFD60A,#FF9F0A)"></i>早班 08–16</span><span><i style="background:linear-gradient(140deg,#64D2FF,#0A84FF)"></i>中班 16–24</span><span><i style="background:linear-gradient(140deg,#7D7AFF,#5E2CA5)"></i>夜班 00–08</span><span><i style="background:linear-gradient(140deg,#5EE6A8,#18A558)"></i>移工日12 08–20</span><span><i style="background:linear-gradient(140deg,#FF6FA0,#B0245E)"></i>移工夜12 20–08</span><span><i style="background:var(--field);border:1px solid var(--line)"></i>休假</span></div>`
+      : `<div class="empty glass">還沒有人員名單，先把線上人員加進來就能排班。<br><button class="btn pri" id="mg2">＋ 新增人員</button> <button class="btn" id="imp2">匯入名單</button></div>`,
+    aside: `<div class="stats">${statHTML(UI.team === '全部' ? '人員數' : esc(UI.team) + '人數', allStaff.length, 'c-purple')}${statHTML('今日出勤', todayCnt === null ? '—' : todayCnt, 'c-indigo')}${statHTML('本週工時', fmt(hours, 0) + ' h', 'c-blue')}${statHTML('本週休假', off + ' 天', 'c-pink')}</div>
+      <div class="panel glass"><h2><span class="bar"></span>計算公式</h2>${formulaTable([
+        ['總工時', '8h班數×8 ＋ 12h班數×12', fmt(hours, 0) + ' h'],
+        ['平均每人', '總工時 ÷ 人數', allStaff.length ? fmt(hours / allStaff.length, 1) + ' h' : '—'],
+        ['休假率', '休假天 ÷ (人數 × 7)', allStaff.length ? (off / (allStaff.length * 7) * 100).toFixed(1) + '%' : '—']])}</div>`,
+    bind: m => {
+      const m2 = $('#mg2', m); if (m2) m2.onclick = () => editStaff();
+      const i2 = $('#imp2', m); if (i2) i2.onclick = () => importStaff();
+      $$('.cell', m).forEach(b => b.onclick = () => pickShift(b.dataset.s, +b.dataset.i));
+    }
+  };
+}
+function manageStaff() {
+  const staff = list('staff').sort((a, b) => String(a.empNo || a.name).localeCompare(String(b.empNo || b.name), 'zh-Hant'));
+  openSheet({
+    title: '管理人員',
+    body: (staff.length ? staff.map(p => `<div class="staffrow"><div><b>${esc(p.name)}</b>${is12(p) ? ' <span class="tag ok">12h</span>' : ''}<small>${[p.team, p.role, p.empNo].filter(Boolean).map(esc).join('・')}</small></div><button type="button" class="btn sm" data-e="${p.id}">編輯</button></div>`).join('') : '<p class="hint">目前沒有人員。</p>') +
+          '<p style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn pri" id="addp">＋ 新增人員</button><button type="button" class="btn" id="imp">匯入名單</button></p>',
+    saveLabel: '完成', onSave: () => true
+  });
+  $('#addp', dlg).onclick = () => editStaff();
+  $('#imp', dlg).onclick = () => importStaff();
+  $$('[data-e]', dlg).forEach(b => b.onclick = () => editStaff(b.dataset.e));
+}
+/* ---------- 匯入人員名單（Excel / CSV / 複製貼上） ---------- */
+let xlsxLoad = null;
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve();
+  if (!xlsxLoad) xlsxLoad = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = res; s.onerror = () => { xlsxLoad = null; rej(new Error('load')); }; document.head.appendChild(s); });
+  return xlsxLoad;
+}
+function splitLine(line, d) {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) { const c = line[i];
+    if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true; else if (c === d) { out.push(cur); cur = ''; } else cur += c; }
+  out.push(cur); return out.map(x => x.trim());
+}
+function parseText(t) {
+  const lines = String(t).replace(/^\ufeff/, '').split(/\r?\n/).filter(l => l.trim());
+  const d = lines.some(l => l.includes('\t')) ? '\t' : ',';
+  return lines.map(l => splitLine(l, d));
+}
+function rowsToStaff(rows) {
+  if (!rows.length) return [];
+  const h = rows[0].map(x => String(x ?? '').trim());
+  const find = (...ks) => h.findIndex(x => ks.some(k => x.includes(k)));
+  let mp, body;
+  if (find('姓名', '名字') >= 0) { mp = { name: find('姓名', '名字'), empNo: find('工號', '員工編號', '編號'), role: find('職稱', '職務', '職位'), team: find('股別', '班別', '組別'), shift: find('班制', '工時', '身分'), note: find('備註') }; body = rows.slice(1); }
+  else { mp = { name: 0, empNo: 1, role: 2, team: 3, note: 4, shift: -1 }; body = rows; }   // 沒有標題列：依序視為 姓名、工號、職稱、股別、備註
+  const g = (r, i) => i >= 0 ? String(r[i] ?? '').trim() : '';
+  const seen = new Map();
+  body.map(r => ({ name: g(r, mp.name), empNo: g(r, mp.empNo), role: g(r, mp.role), team: g(r, mp.team), shift: g(r, mp.shift), note: g(r, mp.note) }))
+      .filter(p => p.name || p.empNo).forEach(p => seen.set(p.empNo || p.name, p));   // 同一份名單重複的只留最後一筆
+  return [...seen.values()];
+}
+async function readFileText(f) {
+  const buf = await f.arrayBuffer();
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (e) { return new TextDecoder('big5').decode(buf); }   // 中文版 Excel 存的 CSV 常是 Big5
+}
+function importStaff() {
+  let parsed = [];
+  const matchOf = p => list('staff').find(s => p.empNo && s.empNo ? String(s.empNo) === p.empNo : s.name === p.name);
+  const preview = d => {
+    const upd = $('#imupd', d).checked, box = $('#impv', d), ok = $('#ok', d);
+    if (!parsed.length) { box.innerHTML = '<p class="hint">選擇檔案或貼上名單後，這裡會顯示預覽。</p>'; ok.textContent = '確認匯入'; return; }
+    let nN = 0, nU = 0, nS = 0;
+    const rowsH = parsed.map(p => { let st;
+      if (!p.name) { st = '<span class="tag bad">缺姓名</span>'; nS++; }
+      else if (matchOf(p)) { if (upd) { st = '<span class="tag blue">更新</span>'; nU++; } else { st = '<span class="tag">已存在，略過</span>'; nS++; } }
+      else { st = '<span class="tag ok">新增</span>'; nN++; }
+      return `<tr><td>${esc(p.empNo)}</td><td>${esc(p.name)}</td><td>${esc(p.role || '技術員')}</td><td>${esc(p.team || '')}</td><td>${st}</td></tr>`; }).join('');
+    box.innerHTML = `<p style="margin:12px 0 6px;font-weight:600">共 ${parsed.length} 筆：新增 ${nN}、更新 ${nU}、略過 ${nS}</p>
+      <div class="tbl-wrap" style="max-height:300px;overflow:auto;border:1px solid var(--line)"><table class="tbl"><thead><tr><th>工號</th><th>姓名</th><th>職稱</th><th>股別</th><th>處理</th></tr></thead><tbody>${rowsH}</tbody></table></div>`;
+    ok.textContent = `確認匯入 ${nN + nU} 筆`;
+  };
+  openSheet({
+    title: '匯入人員名單',
+    body: `<p class="hint" style="margin-top:0">支援 Excel（.xlsx／.xls）或 CSV。第一列放欄位名稱：姓名、工號、職稱、股別、備註（只有姓名必填，欄位順序不拘）。也可以從 Excel 選取後複製、貼到下方。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><label class="btn pri">選擇檔案<input type="file" id="imfile" accept=".xlsx,.xls,.csv,.txt" hidden></label><button type="button" class="btn" id="imtpl">下載範本</button></div>
+      <textarea class="ctl" id="impaste" style="width:100%;height:auto;min-height:110px;padding:10px 12px;font-size:16px" placeholder="或在這裡貼上名單，例如：&#10;姓名	工號	職稱&#10;王小明	A001	技術員"></textarea>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:15px"><input type="checkbox" id="imupd" checked style="width:20px;height:20px">工號（或姓名）相同時，更新原有資料</label>
+      <div id="impv"></div>`,
+    onInput: d => { const t = $('#impaste', d).value; if (t.trim()) parsed = rowsToStaff(parseText(t)); else if (!d.dataset.file) parsed = []; preview(d); },
+    onSave: async d => {
+      const upd = $('#imupd', d).checked; let n = 0;
+      for (const p of parsed) {
+        if (!p.name) continue;
+        const m = matchOf(p);
+        if (m && !upd) continue;
+        const base = m ? (({ id, ...rest }) => rest)(m) : {};
+        await save('staff', m ? m.id : uid(), { ...base, name: p.name, empNo: p.empNo || base.empNo || '', role: p.role || base.role || '技術員', team: p.team || base.team || '', shiftType: normShift(p.shift) || base.shiftType || '8小時三班', note: p.note || base.note || '' });
+        n++;
+      }
+      if (!n) { toast('沒有可以匯入的資料，請確認名單內容'); return false; }
+      toast(`已匯入 ${n} 位人員`);
+    }
+  });
+  delete dlg.dataset.file;
+  $('#imtpl', dlg).onclick = () => exportCSV('人員名單範本.csv', ['姓名','工號','職稱','股別','班制','備註'], [['王小明','A001','技術員','甲股','8小時',''], ['陳大華','A002','班長','乙股','8小時',''], ['阮文安','M001','技術員','丙股','12小時移工',''], ['張文芳','A010','助理工程師','日勤股','8小時','']]);
+  $('#imfile', dlg).onchange = async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try {
+      let rows;
+      if (/\.(xlsx|xls)$/i.test(f.name)) {
+        await loadXLSX();
+        const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+        rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' });
+      } else rows = parseText(await readFileText(f));
+      parsed = rowsToStaff(rows); dlg.dataset.file = '1'; $('#impaste', dlg).value = '';
+      preview(dlg);
+      if (!parsed.length) toast('檔案裡找不到人員資料，請確認有「姓名」欄位');
+      else toast(`已讀取 ${f.name}`);
+    } catch (err) { toast(err && err.message === 'load' ? '無法載入 Excel 讀取元件，請改用 CSV 或複製貼上' : '無法讀取這個檔案，請改用 Excel 或 CSV'); }
+    e.target.value = '';
+  };
+}
+function editStaff(id) {
+  const old = id ? S.data.staff.get(id) : null;
+  openSheet({
+    title: old ? '編輯人員' : '新增人員', body: formHTML(STAFF_SECTIONS, old || { role: '技術員' }),
+    onSave: async d => { const data = readForm(d, STAFF_SECTIONS); if (!data.name) { toast('請填寫姓名'); return false; } await save('staff', id || uid(), data); toast('已儲存人員'); },
+    onDelete: old ? () => removeDoc('staff', id) : null
+  });
+}
+
+/* ===== 3. 訂單排程 ===== */
+function orderOutput(o) {          // 訂單產出：舊條件記錄良品＋生產日報產能列（箱數，pcs 單位時乘入數）
+  const res = { good: 0, dates: new Set() }; if (!o || !o.orderNo) return res;
+  list('logs').forEach(x => { if (x.orderNo === o.orderNo) { res.good += num(x.good); if (x.date) res.dates.add(x.date); } });
+  list('reports').forEach(rp => (rp.outT || []).forEach(r => { if (r.orderNo && String(r.orderNo).trim() === o.orderNo) {
+    const b = num(r.boxes); res.good += (o.unit === 'pcs' && num(o.perBox) > 0) ? b * num(o.perBox) : b; if (rp.date) res.dates.add(rp.date); } }));
+  return res;
+}
+function producedFor(o) { return orderOutput(o).good; }
+function rateFor(o) {
+  const L = list('logs').filter(x => num(x.cycle) > 0).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const hit = L.find(x => o.orderNo && x.orderNo === o.orderNo) || L.find(x => x.machine === o.machine && x.part === o.part) || L.find(x => o.part && x.part === o.part);
+  return hit ? hourRate(hit.cycle, hit.cavity) : 0;
+}
+
+/* ---------- 交期預估引擎 ----------
+   1. 日產量：優先用「實績」＝該訂單良品 ÷ 有生產記錄的天數；
+      沒有實績時用「理論」＝3600 ÷ 週期 × 穴數 × 每日生產時數 × 稼動率。
+   2. 同一台機台的未完成訂單依序排隊（生產中 → 預計開工 → 交期），前一張做完才輪到下一張。
+   3. 預估完工日 vs 交期 → 準時／延遲幾天。                                         */
+const CFG_DEF = { hours: 24, eff: 85, sundayOff: false };
+const cfg = () => ({ ...CFG_DEF, ...(S.data.config.get('main') || {}) });
+function orderActual(o) {
+  const out = orderOutput(o), dates = [...out.dates].sort();
+  return { good: out.good, days: dates.length, first: dates[0] || '', last: dates[dates.length - 1] || '',
+           span: dates.length ? Math.round((parseD(dates[dates.length - 1]) - parseD(dates[0])) / 864e5) + 1 : 0 };
+}
+function dailyRate(o, act) {
+  const c = cfg();
+  if (act.days && act.good > 0) return { rate: act.good / act.days, src: '實績' };
+  if (num(o.planRate) > 0) return { rate: num(o.planRate), src: '標準' };
+  const hr = rateFor(o);
+  if (hr) return { rate: hr * num(c.hours) * num(c.eff) / 100, src: '理論' };
+  return { rate: 0, src: '無資料' };
+}
+function addWorkTime(start, days, sundayOff) {        // 往後推算 days 個「生產日」（可跳過週日）
+  let t = new Date(start), left = days * 864e5;
+  for (let guard = 0; left > 0 && guard < 4000; guard++) {
+    const dayEnd = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1);
+    if (sundayOff && t.getDay() === 0) { t = dayEnd; continue; }
+    const avail = dayEnd - t;
+    if (left <= avail) { t = new Date(+t + left); left = 0; } else { left -= avail; t = dayEnd; }
+  }
+  return t;
+}
+function estimateAll() {
+  const c = cfg(), now = new Date(), res = {};
+  const orders = list('orders');
+  const byM = {};
+  orders.forEach(o => {
+    const act = orderActual(o), qty = num(o.qty), done = Math.max(producedFor(o), act.good), rem = Math.max(0, qty - done);
+    const r = { act, qty, done, rem, ...dailyRate(o, act), needDays: 0, estStart: null, estEnd: null, late: 0, state: '' };
+    res[o.id] = r;
+    if (o.status === '完成') { r.state = 'done'; return; }
+    if (o.status === '暫停') { r.state = 'paused'; return; }
+    (byM[o.machine || '未指定'] = byM[o.machine || '未指定'] || []).push(o);
+  });
+  const pri = { 生產中: 0, 排定: 1, 待排: 2 };
+  for (const m in byM) {
+    let cursor = now;
+    byM[m].sort((a, b) => (pri[a.status] ?? 3) - (pri[b.status] ?? 3) || String(a.start || '9999').localeCompare(String(b.start || '9999')) || String(a.due || '9999').localeCompare(String(b.due || '9999')))
+      .forEach(o => {
+        const r = res[o.id];
+        if (r.rem <= 0) { r.state = 'ok'; r.estEnd = now; r.needDays = 0; }
+        else if (!r.rate) { r.state = 'unknown'; return; }
+        else {
+          let st = cursor;
+          if (o.start && o.status !== '生產中') { const ps = parseD(o.start); if (ps > st) st = ps; }
+          r.estStart = st; r.needDays = r.rem / r.rate; r.estEnd = addWorkTime(st, r.needDays, c.sundayOff); cursor = r.estEnd;
+        }
+        if (o.due) {
+          const dueEnd = addDays(parseD(o.due), 1);
+          r.late = r.estEnd > dueEnd ? Math.ceil((r.estEnd - dueEnd) / 864e5) : 0;
+          r.margin = r.estEnd <= dueEnd ? Math.floor((dueEnd - r.estEnd) / 864e5) : 0;
+        }
+        r.state = r.late > 0 ? 'late' : 'ok';
+      });
+  }
+  return res;
+}
+const estTag = r => !r ? '' : r.state === 'late' ? `<span class="tag bad">預估延遲 ${r.late} 天</span>`
+  : r.state === 'ok' && r.estEnd ? `<span class="tag ok">預估準時${r.margin != null && r.rem ? '（餘 ' + r.margin + ' 天）' : ''}</span>`
+  : r.state === 'unknown' ? '<span class="tag">缺生產資料</span>' : r.state === 'paused' ? '<span class="tag">暫停中</span>' : '';
+const dTxt = d => d ? `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）${pad(d.getHours())}:00` : '—';
+function editEstCfg() {
+  const c = cfg();
+  const sec = [{ title: '交期預估設定', fields: [['hours', '每日生產時數', 'num', 'h'], ['eff', '稼動率（理論值用）', 'num', '%'], ['sundayOff', '週日', 'select', ['照常生產', '停機']]] }];
+  openSheet({
+    title: '預估設定',
+    body: formHTML(sec, { hours: c.hours, eff: c.eff, sundayOff: c.sundayOff ? '停機' : '照常生產' }) +
+      `<p class="hint">有生產記錄的訂單，系統直接用「實際日產量」推算，不受稼動率影響；稼動率只用在還沒開工、只能用週期與穴數估算的訂單。三班或兩班 12 小時都是 24 小時。</p>`,
+    onSave: async d => {
+      const v = readForm(d, sec);
+      if (!(num(v.hours) > 0 && num(v.hours) <= 24)) { toast('每日生產時數請填 1～24'); return false; }
+      if (!(num(v.eff) > 0 && num(v.eff) <= 100)) { toast('稼動率請填 1～100'); return false; }
+      await save('config', 'main', { hours: num(v.hours), eff: num(v.eff), sundayOff: v.sundayOff === '停機' });
+      toast('已儲存預估設定');
+    }
+  });
+}
+
+/* ---------- 甘特圖（依預估完工推算的時間軸） ---------- */
+const GZ = { '2週': { n:14, back:2, px:64 }, '4週': { n:28, back:3, px:42 }, '8週': { n:56, back:7, px:26 } };
+function ganttHTML(orders, EST) {
+  const z = GZ[UI.gz] || GZ['4週'], N = z.n;
+  const from = addDays(parseD(today()), -z.back), to = addDays(from, N), span = to - from;
+  const pos = t => (t - from) / span * 100;
+  const clamp = v => Math.max(0, Math.min(100, v));
+  const items = [];
+  orders.forEach(o => {
+    const r = EST[o.id] || { act:{} };
+    let a = null, b = null, cls = 's-wait';
+    if (o.status === '完成') { cls = 's-done'; a = r.act.first ? parseD(r.act.first) : o.start ? parseD(o.start) : null; b = r.act.last ? addDays(parseD(r.act.last), 1) : o.end ? addDays(parseD(o.end), 1) : null; }
+    else if (o.status === '暫停') { cls = 's-pause'; a = o.start ? parseD(o.start) : null; b = o.end ? addDays(parseD(o.end), 1) : a ? addDays(a, 1) : null; }
+    else {
+      cls = o.status === '生產中' ? 's-run' : o.status === '排定' ? 's-plan' : 's-wait';
+      a = r.act.first ? parseD(r.act.first) : r.estStart || (o.start ? parseD(o.start) : null);
+      b = r.estEnd || (o.end ? addDays(parseD(o.end), 1) : null);
+      if (a && b && b <= a) b = new Date(+a + 36e5 * 2);
+    }
+    if (!a || !b) return;
+    if (b < from || a > to) return;
+    const qy = num(o.qty), pct = qy ? Math.min(100, (r.done || 0) / qy * 100) : 0;
+    items.push({ o, r, a, b, cls, pct, late: r.state === 'late', m: o.machine || '未指定',
+      plan: o.start && o.end ? [parseD(o.start), addDays(parseD(o.end), 1)] : null, due: o.due ? addDays(parseD(o.due), 1) : null });
+  });
+  if (!items.length) return `<div class="panel glass"><div class="gx-tools"><h2><span class="bar"></span>生產甘特圖</h2>${gzChips()}</div><p class="hint" style="margin:0">這段期間沒有可顯示的訂單。訂單填上機台、數量，或預計開工／完工日後就會出現在甘特圖上。</p></div>`;
+  const machines = uniq(items.map(x => x.m));
+  const days = [...Array(N)].map((_, i) => addDays(from, i));
+  const now = new Date(), nowP = pos(now);
+  const weekend = days.map((d, i) => (d.getDay() === 0 || d.getDay() === 6) ? `<div class="gx-we" style="left:${i / N * 100}%;width:${100 / N}%"></div>` : '').join('');
+  const lanes = machines.map(m => {
+    const its = items.filter(x => x.m === m).sort((x, y) => x.a - y.a);
+    const rowsEnd = [];                                  // 重疊時自動分行
+    its.forEach(x => { let k = rowsEnd.findIndex(e => e <= x.a); if (k < 0) { k = rowsEnd.length; rowsEnd.push(0); } rowsEnd[k] = x.b; x.row = k; });
+    const H = Math.max(1, rowsEnd.length) * 50 + 8;
+    const bars = its.map(x => {
+      const l = clamp(pos(x.a)), w = Math.max(0.6, clamp(pos(x.b)) - l), top = 10 + x.row * 50;
+      const tip = `${x.o.orderNo}｜${x.o.part || ''}\n${x.o.status || '待排'}・${fmt(x.r.done || 0, 0)}／${fmt(num(x.o.qty), 0)}（${x.pct.toFixed(0)}%）\n${md(ymd(x.a))} → ${x.r.estEnd && x.o.status !== '完成' ? '預估 ' + dTxt(x.r.estEnd) : md(ymd(addDays(x.b, -1)))}${x.o.due ? '\n交期 ' + md(x.o.due) : ''}${x.late ? '\n⚠ 預估延遲 ' + x.r.late + ' 天' : ''}`;
+      const plan = x.plan ? `<div class="gx-plan" style="left:${clamp(pos(x.plan[0]))}%;width:${Math.max(0, clamp(pos(x.plan[1])) - clamp(pos(x.plan[0])))}%;top:${top + 42}px"></div>` : '';
+      const due = x.due && x.o.status !== '完成' && pos(x.due) >= 0 && pos(x.due) <= 100 ? `<div class="gx-due" style="left:${pos(x.due)}%;top:${top - 6}px;height:50px"><span>交 ${md(x.o.due)}</span></div>` : '';
+      return `${plan}<button class="gx-bar ${x.cls} ${x.late ? 's-late' : ''}" data-id="${x.o.id}" title="${esc(tip)}" style="left:${l}%;width:${w}%;top:${top}px"><span class="fill" style="width:${x.pct}%"></span><span class="lb">${esc(x.o.orderNo)}${x.late ? ' ⚠' : ''}<small>${esc(x.o.part || x.o.customer || '')}${x.pct ? '・' + x.pct.toFixed(0) + '%' : ''}</small></span></button>${due}`;
+    }).join('');
+    return `<div class="gx-row"><div class="gx-name">${esc(m)}<small>${its.filter(x => x.o.status !== '完成').length} 張進行</small></div><div class="gx-track" style="height:${H}px">${weekend}${nowP >= 0 && nowP <= 100 ? `<div class="gx-now" style="left:${nowP}%"></div>` : ''}${bars}</div></div>`;
+  }).join('');
+  return `<div class="panel glass" style="margin-bottom:14px"><div class="gx-tools"><h2><span class="bar"></span>生產甘特圖</h2>${gzChips()}</div>
+    <div class="gx-scroll"><div class="gx" style="--n:${N};--w:${96 + N * z.px}px">
+      <div class="gx-row gx-head"><div class="gx-name">機台</div><div style="position:relative"><div class="gx-days">${days.map(d => `<div class="${d.getDay() === 0 || d.getDay() === 6 ? 'we' : ''} ${ymd(d) === today() ? 'td' : ''} ${d.getDate() === 1 ? 'm1' : ''}">${N > 30 ? '' : WD[d.getDay()]}<b>${N > 30 && d.getDate() !== 1 && d.getDay() !== 1 && ymd(d) !== today() ? d.getDate() : (d.getMonth() + 1) + '/' + d.getDate()}</b></div>`).join('')}</div>${nowP >= 0 && nowP <= 100 ? `<div class="gx-now" style="left:${nowP}%"></div>` : ''}</div></div>
+      ${lanes}
+    </div></div>
+    <div class="gx-legend"><span><i style="background:linear-gradient(135deg,#FF9F0A,#FF375F)"></i>生產中</span><span><i style="background:linear-gradient(135deg,#40C8E0,#0A84FF)"></i>排定</span><span><i style="background:linear-gradient(135deg,#A1A1AA,#6E6E78)"></i>待排</span><span><i style="background:repeating-linear-gradient(135deg,#8E8E93 0 4px,#AEAEB2 4px 8px)"></i>暫停</span><span><i style="background:linear-gradient(135deg,#30D158,#1E9E5A)"></i>完成</span><span><i style="background:transparent;box-shadow:inset 0 0 0 2px var(--red)"></i>預估延遲</span><span><i style="background:transparent;border-left:2px dashed var(--red);border-radius:0;width:2px"></i>交期</span><span><i style="background:repeating-linear-gradient(90deg,var(--muted) 0 4px,transparent 4px 7px);height:3px"></i>原計畫</span><span><i style="background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px var(--line)"></i>色條內淺色＝已完成比例</span></div></div>`;
+}
+const gzChips = () => `<div class="chips">${Object.keys(GZ).map(k => `<button class="chip" data-gz="${k}" aria-pressed="${k === (UI.gz || '4週')}">${k}</button>`).join('')}</div>`;
+const STATUS_TAG = { 待排:'', 排定:'blue', 生產中:'warn', 暫停:'', 完成:'ok' };
+function viewSchedule() {
+  const q = UI.q.schedule, td = today();
+  const orders = list('orders');
+  const stF = o => UI.ordStatus === '全部' || (UI.ordStatus === '未完成' ? o.status !== '完成' : o.status === UI.ordStatus);
+  const shown = orders.filter(o => stF(o) && matchQ(o, q));
+  const active = orders.filter(o => o.status !== '完成');
+  const EST = estimateAll();
+  const isRisk = o => o.status !== '完成' && ((EST[o.id] && EST[o.id].state === 'late') || (o.due && o.due < td && EST[o.id] && EST[o.id].rem > 0));
+  const risk = active.filter(isRisk);
+  const totQty = active.reduce((s, o) => s + num(o.qty), 0), totDone = active.reduce((s, o) => s + Math.min(num(o.qty), producedFor(o)), 0);
+  const gantt = ganttHTML(shown, EST);
+  const sorted = [...shown].sort((a, b) => (a.status === '完成') - (b.status === '完成') || String(a.start || '9999').localeCompare(String(b.start || '9999')));
+  const estRows = active.filter(o => matchQ(o, q)).map(o => ({ o, r: EST[o.id] })).sort((a, b) => (a.r.estEnd ? +a.r.estEnd : 9e15) - (b.r.estEnd ? +b.r.estEnd : 9e15));
+  const C = cfg();
+  const estPanel = estRows.length ? `<div class="panel glass" style="margin-bottom:14px"><h2><span class="bar"></span>交期預估（實際生產天數）<span style="margin-left:auto;font-size:13px;color:var(--muted);font-weight:500">每日 ${C.hours}h・稼動率 ${C.eff}%${C.sundayOff ? '・週日停機' : ''}</span></h2>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>訂單／機台</th><th style="text-align:right">剩餘</th><th style="text-align:right" class="hide-m">日產量</th><th style="text-align:right" class="hide-m">已生產天數</th><th style="text-align:right">還需天數</th><th>預估完工</th><th class="hide-m">交期</th><th>判定</th></tr></thead><tbody>
+      ${estRows.map(({ o, r }) => `<tr data-id="${o.id}" style="cursor:pointer"><td><b>${esc(o.orderNo)}</b><br><span style="font-size:12px;color:var(--muted)">${esc(o.machine || '未指定')}</span></td>
+        <td class="n">${fmt(r.rem, 0)}</td>
+        <td class="n hide-m">${r.rate ? fmt(r.rate, 0) : '—'}<br><span style="font-size:11px;color:var(--muted);font-weight:500">${r.src}</span></td>
+        <td class="n hide-m">${r.act.days ? r.act.days + ' 天' : '—'}</td>
+        <td class="n">${r.estEnd && r.rem ? fmt(r.needDays, 1) + ' 天' : r.rem ? '—' : '0'}</td>
+        <td>${r.estEnd ? `<b>${dTxt(r.estEnd)}</b>` : '—'}</td>
+        <td class="hide-m">${md(o.due)}</td><td>${estTag(r)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="hint">日產量「實績」來自這張訂單的實際生產記錄；「理論」是還沒開工時，依週期、穴數與預估設定估算。同一台機台的訂單會依「生產中 → 預計開工 → 交期」排隊推算。點任一列可開啟訂單。</p></div>` : '';
+  return {
+    title: '訂單生產排程',
+    meta: `顯示 <b>${shown.length}</b> 筆訂單`,
+    filters: ['未完成','生產中','完成','全部'].map(s => `<button class="chip" data-st="${s}" aria-pressed="${s === UI.ordStatus}">${s}</button>`).join(''),
+    actions: `<button class="btn" id="estcfg">預估設定</button><button class="btn" id="exp">匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
+    bindFilters: f => {
+      $('#estcfg', f).onclick = editEstCfg;
+      $$('[data-st]', f).forEach(b => b.onclick = () => { UI.ordStatus = b.dataset.st; $$('[data-st]', f).forEach(x => x.setAttribute('aria-pressed', x === b)); render(); });
+      $('#add', f).onclick = () => editOrder();
+      $('#exp', f).onclick = () => CUR.exp();
+    },
+    exp: () => exportCSV(`訂單排程_${td}.csv`, ['訂單號碼','客戶','產品','訂單數量','已生產','達成率','交期','機台','模具','預計開工','預計完工','狀態','實際生產天數','首次生產日','最後生產日','日產量','日產量來源','還需天數','預估完工日','預估延遲天數','備註'],
+        sorted.map(o => { const dn = producedFor(o), r = EST[o.id] || { act:{} }; return [o.orderNo, o.customer, o.part, o.qty, dn, num(o.qty) ? (dn / num(o.qty) * 100).toFixed(1) + '%' : '', o.due, o.machine, o.mold, o.start, o.end, o.status, r.act.days || '', r.act.first || '', r.act.last || '', r.rate ? Math.round(r.rate) : '', r.src || '', r.estEnd && r.rem ? r.needDays.toFixed(1) : '', r.estEnd ? ymd(r.estEnd) : '', r.late || '', o.note]; })),
+    main: orders.length ? `${estPanel}${gantt}<div class="list" style="margin-top:14px">${sorted.map(o => {
+        const dn = producedFor(o), qy = num(o.qty), pct = qy ? Math.min(100, dn / qy * 100) : 0, r = EST[o.id] || { act:{} };
+        return `<button class="card glass" data-id="${o.id}">
+          <span class="badge">${esc((o.machine || '未排').slice(0, 5))}</span>
+          <span><span class="t">${esc(o.orderNo || '（無單號）')}</span> <span class="tag ${STATUS_TAG[o.status] || ''}">${esc(o.status || '待排')}</span> ${o.status === '完成' ? (r.act.days ? `<span class="tag blue">實際生產 ${r.act.days} 天</span>` : '') : estTag(r)}<br><span class="s">${esc(o.customer || '')}${o.customer ? '・' : ''}${esc(o.part || '')}</span></span>
+          <span class="hide-m"><span class="progress ${pct >= 100 ? 'done' : ''}"><i style="width:${pct}%"></i></span><span class="s">${fmt(dn, 0)} / ${fmt(qy, 0)}（${pct.toFixed(0)}%）${r.act.days ? `・已生產 ${r.act.days} 天` : ''}</span></span>
+          <span class="r"><small>交期</small><b>${md(o.due)}</b><small>${o.status === '完成' ? (r.act.last ? md(r.act.last) + ' 完成' : '已完成') : r.estEnd ? '預估 ' + md(ymd(r.estEnd)) : o.start ? md(o.start) + ' 起' : '未排日期'}</small></span>
+        </button>`; }).join('') || '<div class="empty glass">沒有符合的訂單</div>'}</div>
+        <p class="hint">已生產數＝條件記錄中相同訂單號碼的良品加總。</p>`
+      : `<div class="empty glass">還沒有訂單。填上機台與開工、完工日，就會自動畫出排程圖。<br><button class="btn pri" id="add2">＋ 新增訂單</button></div>`,
+    aside: `<div class="stats">${statHTML('未完成', active.length, 'c-orange')}${statHTML('生產中', orders.filter(o => o.status === '生產中').length, 'c-teal')}${statHTML('預估延遲', risk.length, risk.length ? 'c-red alert' : 'c-green')}${statHTML('整體達成', totQty ? (totDone / totQty * 100).toFixed(0) + '%' : '—', 'c-pink')}</div>
+      <div class="panel glass"><h2><span class="bar"></span>計算公式</h2>${formulaTable([
+        ['達成率', '已生產 ÷ 訂單數量', totQty ? (totDone / totQty * 100).toFixed(1) + '%' : '—'],
+        ['剩餘數量', '訂單數量 − 已生產', fmt(Math.max(0, totQty - totDone), 0)],
+        ['預估需時', '剩餘數量 ÷ 理論時產', '見各訂單'],
+        ['交期風險', '完工日 > 交期 或 已過交期', risk.length + ' 筆']])}<p class="hint">達成率依未完成訂單加總。</p></div>`,
+    bind: m => { const a2 = $('#add2', m); if (a2) a2.onclick = () => editOrder(); $$('.card, .gx-bar, tr[data-id]', m).forEach(b => b.onclick = () => editOrder(b.dataset.id));
+      $$('[data-gz]', m).forEach(b => b.onclick = () => { UI.gz = b.dataset.gz; mem.set('gz', UI.gz); render(); }); }
+  };
+}
+function orderCalc(d) {
+  const g = k => $(`[name="${k}"]`, d)?.value;
+  const o = { orderNo: g('orderNo'), machine: g('machine'), part: g('part') };
+  const dn = producedFor(o), qy = num(g('qty')), hr = rateFor(o), rem = Math.max(0, qy - dn);
+  const days = g('start') && g('end') ? Math.round((parseD(g('end')) - parseD(g('start'))) / 864e5) + 1 : 0;
+  const act = orderActual(o), dr = dailyRate(o, act), c = cfg();
+  const st = g('start') && parseD(g('start')) > new Date() ? parseD(g('start')) : new Date();
+  const end = dr.rate && rem ? addWorkTime(st, rem / dr.rate, c.sundayOff) : null;
+  const dueEnd = g('due') ? addDays(parseD(g('due')), 1) : null;
+  $('#calc', d).innerHTML = `<h4>即時計算</h4>${formulaTable([
+    ['已生產', '條件記錄良品加總', fmt(dn, 0) + ' pcs'],
+    ['達成率', '已生產 ÷ 訂單數量', qy ? (dn / qy * 100).toFixed(1) + '%' : '—'],
+    ['理論時產', '3600 ÷ 週期 × 穴數', hr ? fmt(hr, 0) + ' pcs/h' : '尚無條件記錄'],
+    ['已生產天數', '有記錄的天數', act.days ? act.days + ' 天' : '—'],
+    ['日產量', dr.src, dr.rate ? fmt(dr.rate, 0) + ' pcs/天' : '—'],
+    ['還需天數', '剩餘 ÷ 日產量', end ? fmt(rem / dr.rate, 1) + ' 天' : '—'],
+    ['預估完工', '單張估算（未含排隊）', end ? dTxt(end) + (dueEnd ? (end > dueEnd ? ` <span class="tag bad">延遲 ${Math.ceil((end - dueEnd) / 864e5)} 天</span>` : ' <span class="tag ok">準時</span>') : '') : '—'],
+    ['排程天數', '完工日 − 開工日 + 1', days ? days + ' 天' : '—']])}`;
+}
+function editOrder(id) {
+  const old = id ? S.data.orders.get(id) : null;
+  const quick = old ? null : { customer: recentVals('orders', 'customer', 3), machine: recentVals('orders', 'machine', 3), part: recentVals('orders', 'part', 3) };
+  openSheet({
+    title: old ? '編輯訂單' : '新增訂單',
+    body: formHTML(ORDER_SECTIONS, old || { status: '待排' }, quick) + '<div class="calc" id="calc"></div>',
+    draftKey: old ? null : 'order', sections: ORDER_SECTIONS, onInput: orderCalc,
+    onScan: (key, v, d) => { if (key === 'orderNo') { const o = findOrder(v); if (o && o.id !== id) toast('注意：這個訂單號碼已經存在'); } },
+    onSave: async d => {
+      const data = readForm(d, ORDER_SECTIONS);
+      if (!data.orderNo) { toast('請填寫訂單號碼'); return false; }
+      if (data.start && data.end && data.end < data.start) { toast('預計完工不能早於開工日'); return false; }
+      data.updated = Date.now();
+      await save('orders', id || uid(), data); toast('已儲存訂單');
+    },
+    onDelete: old ? () => removeDoc('orders', id) : null
+  });
+}
+
+/* ===== 4. 生產庫存 ===== */
+function dailyOut(itemId) { const since = ymd(addDays(new Date(), -13)); return list('moves').filter(m => m.itemId === itemId && m.type === 'out' && m.date >= since).reduce((s, m) => s + num(m.qty), 0) / 14; }
+function viewStock() {
+  const q = UI.q.stock;
+  const items = list('items').sort((a, b) => String(a.cat).localeCompare(String(b.cat), 'zh-Hant') || String(a.code || a.name).localeCompare(String(b.code || b.name)));
+  const cats = ['全部', ...uniq(items.map(i => i.cat))];
+  const isLow = i => has(i.safety) && num(i.qty) < num(i.safety);
+  const shown = items.filter(i => (UI.stockCat === '全部' || i.cat === UI.stockCat) && matchQ(i, q));
+  const low = items.filter(isLow);
+  const moves = list('moves').sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 20);
+  const tdMoves = list('moves').filter(m => m.date === today());
+  return {
+    title: '生產庫存量表',
+    meta: `共 <b>${shown.length}</b> 個品項`,
+    filters: cats.map(c => `<button class="chip" data-c="${esc(c)}" aria-pressed="${c === UI.stockCat}">${esc(c)}</button>`).join(''),
+    actions: `<button class="btn" id="exp">匯出</button><button class="btn pri" id="add">＋ 新增</button>`,
+    bindFilters: f => {
+      $$('[data-c]', f).forEach(b => b.onclick = () => { UI.stockCat = b.dataset.c; $$('[data-c]', f).forEach(x => x.setAttribute('aria-pressed', x === b)); render(); });
+      $('#add', f).onclick = () => editItem();
+      $('#exp', f).onclick = () => CUR.exp();
+    },
+    exp: () => exportCSV(`生產庫存_${today()}.csv`, ['品號','品名／規格','類別','單位','目前庫存','安全庫存','日均出庫(14天)','可用天數','建議補貨量','儲位'],
+        items.map(i => { const d = dailyOut(i.id); return [i.code, i.name, i.cat, i.unit, i.qty, i.safety, d.toFixed(2), d ? (num(i.qty) / d).toFixed(1) : '', isLow(i) ? num(i.safety) - num(i.qty) : '', i.loc]; })),
+    main: items.length ? `<div class="tbl-wrap glass"><table class="tbl"><thead><tr><th class="sticky">品名</th><th class="hide-m">品號</th><th class="hide-m">類別</th><th style="text-align:right">庫存</th><th style="text-align:right" class="hide-m">可用天數</th><th></th></tr></thead><tbody>
+      ${shown.map(i => { const d = dailyOut(i.id); return `<tr class="${isLow(i) ? 'low' : ''}"><td class="sticky"><button class="nm" data-e="${i.id}">${esc(i.name || '（未命名）')}</button><br><span style="font-size:12px;color:var(--muted)">${esc(i.loc || '')}${isLow(i) ? ' <span class="tag bad">需補貨</span>' : ''}</span></td>
+        <td class="hide-m">${esc(i.code || '')}</td><td class="hide-m">${esc(i.cat || '')}</td>
+        <td class="n">${fmt(i.qty)} <span style="font-size:12px;color:var(--muted);font-weight:500">${esc(i.unit || '')}</span>${has(i.safety) ? `<br><span style="font-size:11px;color:var(--muted);font-weight:500">安全量 ${fmt(i.safety)}</span>` : ''}</td>
+        <td class="n hide-m">${d ? fmt(num(i.qty) / d, 1) + ' 天' : '—'}</td>
+        <td><div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn sm" data-in="${i.id}" style="color:var(--green)">入庫</button><button class="btn sm" data-out="${i.id}" style="color:var(--orange)">出庫</button></div></td></tr>`; }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">找不到符合的品項</td></tr>'}
+      </tbody></table></div>
+      <div class="panel glass" style="margin-top:14px"><h2><span class="bar"></span>最近異動</h2>${moves.length ? `<div class="tbl-wrap"><table class="tbl"><tbody>${moves.map(m => { const it = S.data.items.get(m.itemId); return `<tr><td>${md(m.date)}</td><td>${esc(it ? it.name : m.itemName || '（已刪除）')}</td><td><span class="tag ${m.type === 'in' ? 'ok' : 'warn'}">${m.type === 'in' ? '入庫' : '出庫'}</span></td><td class="n">${m.type === 'in' ? '+' : '−'}${fmt(m.qty)}</td><td class="hide-m">${esc(m.ref || '')}</td><td class="hide-m">${esc(m.by || '')}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="hint">按「入庫／出庫」數量會自動增減並留下紀錄。</p>'}</div>`
+      : `<div class="empty glass">還沒有庫存品項，可以先建立 PET 原料、成品、包材等。<br><button class="btn pri" id="add2">＋ 新增品項</button></div>`,
+    aside: `<div class="stats">${statHTML('品項數', items.length, 'c-green')}${statHTML('需補貨', low.length, low.length ? 'c-red alert' : 'c-teal')}${statHTML('今日入庫', tdMoves.filter(m => m.type === 'in').length + ' 筆', 'c-blue')}${statHTML('今日出庫', tdMoves.filter(m => m.type === 'out').length + ' 筆', 'c-orange')}</div>
+      <div class="panel glass"><h2><span class="bar"></span>計算公式</h2>${formulaTable([
+        ['日均出庫', '近 14 天出庫量 ÷ 14', '見匯出'],
+        ['可用天數', '目前庫存 ÷ 日均出庫', '見表格'],
+        ['建議補貨', '安全庫存 − 目前庫存', low.length ? low.length + ' 項' : '無'],
+        ['入出庫後', '庫存 ± 異動數量', '自動更新']])}</div>`,
+    bind: m => {
+      const a2 = $('#add2', m); if (a2) a2.onclick = () => editItem();
+      $$('[data-e]', m).forEach(b => b.onclick = () => editItem(b.dataset.e));
+      $$('[data-in]', m).forEach(b => b.onclick = () => moveItem(b.dataset.in, 'in'));
+      $$('[data-out]', m).forEach(b => b.onclick = () => moveItem(b.dataset.out, 'out'));
+    }
+  };
+}
+function editItem(id, prefill) {
+  const old = id ? S.data.items.get(id) : null;
+  openSheet({
+    title: old ? '編輯品項' : '新增品項',
+    body: formHTML(ITEM_SECTIONS, old || { cat: '原料', qty: 0, ...(prefill || {}) }) + (old ? '<p class="hint">平常請用「入庫／出庫」留下紀錄；這裡改數量適合盤點校正。</p>' : ''),
+    draftKey: old ? null : 'item', sections: ITEM_SECTIONS,
+    onSave: async d => { const data = readForm(d, ITEM_SECTIONS); if (!data.name) { toast('請填寫品名'); return false; } if (data.qty === '') data.qty = 0; data.updated = Date.now(); await save('items', id || uid(), data); toast('已儲存品項'); },
+    onDelete: old ? () => removeDoc('items', id) : null
+  });
+}
+function moveItem(id, type) {
+  const it = S.data.items.get(id); if (!it) return;
+  const sec = [{ title: `${it.name}（目前 ${fmt(it.qty)} ${it.unit || ''}）`, fields: [['qty', type === 'in' ? '入庫數量' : '出庫數量', 'num', it.unit || ''], ['date', '日期', 'date'], ['ref', '單號／說明', 'text'], ['by', '經手人', 'text', 'list:staffName']] }];
+  const lastQty = list('moves').filter(m => m.itemId === id && m.type === type).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 3).map(m => String(m.qty));
+  openSheet({
+    title: type === 'in' ? '入庫' : '出庫',
+    body: formHTML(sec, { date: today(), by: mem.get('moveBy', '') }, { qty: [...new Set(lastQty)], ref: recentVals('moves', 'ref', 2) }) + '<div class="calc" id="calc"></div>',
+    saveLabel: type === 'in' ? '確認入庫' : '確認出庫',
+    onInput: d => { const q = num($('[name="qty"]', d).value), nq = num(it.qty) + (type === 'in' ? q : -q);
+      $('#calc', d).innerHTML = `<h4>即時計算</h4>${formulaTable([['異動後庫存', `${fmt(it.qty)} ${type === 'in' ? '＋' : '−'} ${fmt(q)}`, `<span style="color:${nq < 0 ? 'var(--red)' : 'inherit'}">${fmt(nq)} ${esc(it.unit || '')}</span>`],
+        ['與安全量差距', '異動後 − 安全庫存', has(it.safety) ? fmt(nq - num(it.safety)) : '—']])}`; },
+    onSave: async d => {
+      const m = readForm(d, sec); const q = num(m.qty);
+      if (q <= 0) { toast('請輸入大於 0 的數量'); return false; }
+      const cur = S.data.items.get(id) || it;
+      const nq = Math.round((num(cur.qty) + (type === 'in' ? q : -q)) * 1000) / 1000;
+      if (nq < 0) { toast(`庫存不足，目前只有 ${fmt(cur.qty)}`); return false; }
+      await save('moves', uid(), { itemId: id, itemName: cur.name, type, qty: q, date: m.date || today(), ref: m.ref, by: m.by, ts: Date.now() });
+      await save('items', id, { ...cur, qty: nq });
+      if (m.by) mem.set('moveBy', m.by);
+      toast(`${type === 'in' ? '已入庫' : '已出庫'}，庫存 ${fmt(nq)} ${cur.unit || ''}`);
+    }
+  });
+}
+
+/* ---------- 啟動 ---------- */
+window.addEventListener('hashchange', () => { $('#filters').dataset.v = ''; render(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme(theme));
+loadLocal(); setSync(); render(); connect();
+setInterval(() => { if (!dlg.open && !(document.activeElement && document.activeElement.matches('input,select,textarea'))) render(); }, 60000);
+</script>
+</body>
+</html>
